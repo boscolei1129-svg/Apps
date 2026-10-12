@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Snake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Chakra+Petch:wght@500;600&display=swap">
+<style>
+  /* Layout: one handset centered in the room — LCD on top, rubber keypad below. Single dark look by choice. */
+  :root {
+    --room: #161c27;
+    --shell: #2f3b51;
+    --shell-hi: #43526d;
+    --lcd: #b4c494;
+    --ink: #27301d;
+    --key: #dfe2d8;
+    --key-ink: #232a35;
+    --accent: #f2a03d;
+    --muted: #8d9ab0;
+    --font-pixel: "Silkscreen", ui-monospace, "Courier New", monospace;
+    --font-body: "Chakra Petch", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(120% 80% at 50% 0%, #222b3a 0%, var(--room) 60%) var(--room);
+    color: var(--key);
+    font-family: var(--font-body);
+    display: grid;
+    place-items: center;
+    padding-inline: 16px;
+    padding-block: 16px;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .phone {
+    width: 100%;
+    max-width: 360px;
+    background: linear-gradient(160deg, var(--shell-hi), var(--shell) 45%);
+    border-radius: 44px 44px 64px 64px;
+    padding: 22px 20px 26px;
+    box-sizing: border-box;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.12), inset 0 -6px 16px rgba(0,0,0,.35), 0 24px 60px rgba(0,0,0,.5);
+    display: grid;
+    gap: 18px;
+  }
+  .brand {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--font-pixel); font-size: 13px; letter-spacing: .18em;
+    color: var(--muted); padding-inline: 8px;
+  }
+  .brand b { color: var(--key); font-weight: 700; }
+  .bezel {
+    background: #1b2230;
+    border-radius: 18px 18px 28px 28px;
+    padding: 14px 14px 18px;
+    box-shadow: inset 0 3px 10px rgba(0,0,0,.6);
+  }
+  .lcd {
+    position: relative;
+    background: var(--lcd);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 8px 8px 10px;
+    box-shadow: inset 0 0 18px rgba(39,48,29,.35);
+    touch-action: none;
+    user-select: none;
+    cursor: pointer;
+  }
+  .status {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-pixel); font-size: 12px; line-height: 1;
+    padding: 0 2px 6px; border-bottom: 2px solid var(--ink); margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .status span { display: inline-flex; gap: 6px; align-items: center; }
+  [hidden] { display: none !important; }
+  canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+  .overlay {
+    position: absolute; inset: 30px 8px 10px;
+    display: grid; place-content: center; text-align: center; gap: 6px;
+    font-family: var(--font-pixel);
+    background: rgba(180,196,148,.82);
+  }
+  .overlay h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: .04em; line-height: 1; }
+  .overlay p { margin: 0; font-size: 11px; line-height: 1.5; }
+  .overlay .big { font-size: 15px; }
+  .keypad {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 14px;
+    padding-inline: 6px;
+  }
+  .key {
+    appearance: none; border: 0; cursor: pointer;
+    background: var(--key); color: var(--key-ink);
+    border-radius: 14px 14px 20px 20px;
+    height: 48px;
+    display: grid; place-content: center; gap: 1px;
+    font-family: var(--font-body); font-weight: 600; font-size: 20px; line-height: 1;
+    box-shadow: 0 4px 0 #9aa094, 0 6px 10px rgba(0,0,0,.35);
+    transition: transform .06s, box-shadow .06s;
+    touch-action: manipulation;
+  }
+  .key small { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 500; opacity: .7; }
+  .key:active, .key.down { transform: translateY(3px); box-shadow: 0 1px 0 #9aa094, 0 2px 4px rgba(0,0,0,.35); }
+  .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .key.go { background: var(--accent); box-shadow: 0 4px 0 #b06d1e, 0 6px 10px rgba(0,0,0,.35); }
+  .key.go:active, .key.go.down { box-shadow: 0 1px 0 #b06d1e, 0 2px 4px rgba(0,0,0,.35); }
+  .key.blank { opacity: .38; cursor: default; }
+  .help {
+    margin: 0; text-align: center; font-size: 12px; color: var(--muted); line-height: 1.5;
+  }
+  .help kbd { font-family: var(--font-pixel); font-size: 10px; color: var(--key); }
+  @media (max-height: 640px) {
+    .phone { gap: 12px; padding-block: 16px 18px; }
+    .key { height: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .key { transition: none; } }
+</style>
+</head>
+<body>
+<main class="phone">
+  <div class="brand"><b>POCKET</b><span>SNAKE II</span></div>
+
+  <div class="bezel">
+    <div class="lcd" id="lcd" aria-label="Game screen. Tap to start or pause, swipe to turn.">
+      <div class="status">
+        <span id="score">0000</span>
+        <span id="bonus" hidden>&#9672; <span id="bonusTtl">20</span></span>
+        <span>L<span id="lvl">5</span> <span id="wallTag">&#9634;</span></span>
+      </div>
+      <canvas id="board" width="288" height="192"></canvas>
+      <div class="overlay" id="overlay" role="status" aria-live="polite">
+        <h1 id="ovTitle">SNAKE</h1>
+        <p class="big" id="ovLine">BEST <span id="best">0</span></p>
+        <p id="ovHint">PRESS 5 TO PLAY</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="keypad" id="keypad">
+    <button class="key blank" tabindex="-1" aria-hidden="true">1</button>
+    <button class="key" data-k="2" aria-label="Up">2<small>up</small></button>
+    <button class="key blank" tabindex="-1" aria-hidden="true">3</button>
+    <button class="key" data-k="4" aria-label="Left">4<small>left</small></button>
+    <button class="key go" data-k="5" aria-label="Start or pause">5<small id="goLabel">play</small></button>
+    <button class="key" data-k="6" aria-label="Right">6<small>right</small></button>
+    <button class="key blank" tabindex="-1" aria-hidden="true">7</button>
+    <button class="key" data-k="8" aria-label="Down">8<small>down</small></button>
+    <button class="key blank" tabindex="-1" aria-hidden="true">9</button>
+    <button class="key" data-k="*" aria-label="Slower level">*<small>slower</small></button>
+    <button class="key" data-k="0" aria-label="Toggle walls">0<small id="wallLabel">walls</small></button>
+    <button class="key" data-k="#" aria-label="Faster level">#<small>faster</small></button>
+  </div>
+
+  <p class="help">Arrows / <kbd>WASD</kbd> steer · <kbd>SPACE</kbd> pause · or swipe</p>
+</main>
+
+<script>
+(() => {
+  const COLS = 24, ROWS = 16, CELL = 12;
+  const INK = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#27301d';
+  const cv = document.getElementById('board');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('pocketsnake.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('pocketsnake.' + k, JSON.stringify(v)); } catch {} }
+  };
+
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  let level = store.get('level', 5), walls = store.get('walls', false), best = store.get('best', 0);
+  let snake, dir, queue, food, bonus, score, eaten, state = 'ready', acc = 0, last = 0, isNewBest = false;
+
+  const interval = () => 250 - level * 22; // L1 228ms … L9 52ms
+
+  function reset() {
+    const y = ROWS >> 1;
+    snake = [{ x: 8, y }, { x: 7, y }, { x: 6, y }, { x: 5, y }];
+    dir = 'right'; queue = []; bonus = null; score = 0; eaten = 0; isNewBest = false;
+    food = freeCell();
+  }
+
+  function freeCell() {
+    const taken = new Set(snake.map(s => s.x + ',' + s.y));
+    if (food) taken.add(food.x + ',' + food.y);
+    if (bonus) taken.add(bonus.x + ',' + bonus.y);
+    const lo = walls ? 1 : 0, hiX = walls ? COLS - 1 : COLS, hiY = walls ? ROWS - 1 : ROWS;
+    const open = [];
+    for (let y = lo; y < hiY; y++) for (let x = lo; x < hiX; x++) if (!taken.has(x + ',' + y)) open.push({ x, y });
+    return open.length ? open[(Math.random() * open.length) | 0] : null;
+  }
+
+  function turn(d) {
+    if (state === 'ready' || state === 'over') { start(); }
+    if (state !== 'running') return;
+    const lastDir = queue.length ? queue[queue.length - 1] : dir;
+    const [ax, ay] = DIRS[lastDir], [bx, by] = DIRS[d];
+    if (d === lastDir || (ax + bx === 0 && ay + by === 0)) return; // no reversing into yourself
+    if (queue.length < 3) queue.push(d);
+  }
+
+  function step() {
+    if (queue.length) dir = queue.shift();
+    const [dx, dy] = DIRS[dir];
+    let x = snake[0].x + dx, y = snake[0].y + dy;
+    if (walls) {
+      if (x < 1 || y < 1 || x >= COLS - 1 || y >= ROWS - 1) return die();
+    } else {
+      x = (x + COLS) % COLS; y = (y + ROWS) % ROWS;
+    }
+    const grows = food && x === food.x && y === food.y;
+    const body = grows ? snake : snake.slice(0, -1);
+    if (body.some(s => s.x === x && s.y === y)) return die();
+
+    snake.unshift({ x, y });
+    if (grows) {
+      score += level; eaten++;
+      food = freeCell();
+      if (eaten % 5 === 0 && !bonus) { bonus = freeCell(); if (bonus) bonus.ttl = 20; }
+    } else {
+      snake.pop();
+    }
+    if (bonus) {
+      if (x === bonus.x && y === bonus.y) { score += level * 5 + bonus.ttl; bonus = null; }
+      else if (--bonus.ttl <= 0) bonus = null;
+    }
+    if (!food) return die(true);
+  }
+
+  function die(won) {
+    state = 'over';
+    if (score > best) { best = score; isNewBest = true; store.set('best', best); }
+    showOverlay(won ? 'YOU WIN' : 'GAME OVER',
+      isNewBest ? 'NEW BEST ' + score : 'SCORE ' + score + ' · BEST ' + best,
+      'PRESS 5 TO RETRY');
+  }
+
+  function start() {
+    reset(); state = 'running'; acc = 0; hideOverlay();
+  }
+
+  function togglePause() {
+    if (state === 'running') { state = 'paused'; showOverlay('PAUSED', 'SCORE ' + score, 'PRESS 5 TO RESUME'); }
+    else if (state === 'paused') { state = 'running'; hideOverlay(); }
+    else start();
+  }
+
+  function showOverlay(t, line, hint) {
+    $('ovTitle').textContent = t; $('ovLine').textContent = line; $('ovHint').textContent = hint;
+    $('overlay').hidden = false; syncUi();
+  }
+  function hideOverlay() { $('overlay').hidden = true; syncUi(); }
+
+  function setLevel(n) {
+    if (state === 'running') return;
+    level = Math.min(9, Math.max(1, n)); store.set('level', level); syncUi();
+  }
+  function toggleWalls() {
+    if (state === 'running' || state === 'paused') return;
+    walls = !walls; store.set('walls', walls);
+    if (state === 'ready' || state === 'over') { reset(); state = 'ready'; showOverlay('SNAKE', 'BEST ' + best, walls ? 'WALLS ON · PRESS 5' : 'NO WALLS · PRESS 5'); }
+    syncUi();
+  }
+
+  function syncUi() {
+    $('score').textContent = String(score).padStart(4, '0');
+    $('lvl').textContent = level;
+    $('wallTag').innerHTML = walls ? '&#9635;' : '&#9634;';
+    $('wallLabel').textContent = walls ? 'walls on' : 'walls off';
+    $('goLabel').textContent = state === 'running' ? 'pause' : 'play';
+    $('bonus').hidden = !bonus;
+    if (bonus) $('bonusTtl').textContent = bonus.ttl;
+  }
+
+  // ---- drawing: everything is built from 4px LCD "dots", 3×3 per cell ----
+  const DOT = CELL / 3;
+  function dots(cx, cy, pattern) {
+    for (let i = 0; i < 9; i++) if (pattern[i] === '1')
+      ctx.fillRect(cx * CELL + (i % 3) * DOT + .5, cy * CELL + ((i / 3) | 0) * DOT + .5, DOT - 1, DOT - 1);
+  }
+  const P = { body: '111111111', food: '010101010', bonus: '111101111', wall: '101010101' };
+  function headPattern() {
+    return { right: '111110111', left: '111011111', up: '101111111', down: '111111101' }[dir];
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = INK;
+    ctx.globalAlpha = .07; // LCD ghost grid
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) dots(x, y, P.body);
+    ctx.globalAlpha = 1;
+    if (walls) {
+      for (let x = 0; x < COLS; x++) { dots(x, 0, P.wall); dots(x, ROWS - 1, P.wall); }
+      for (let y = 1; y < ROWS - 1; y++) { dots(0, y, P.wall); dots(COLS - 1, y, P.wall); }
+    }
+    if (food) dots(food.x, food.y, P.food);
+    if (bonus && (bonus.ttl > 5 || bonus.ttl % 2)) dots(bonus.x, bonus.y, P.bonus);
+    snake.forEach((s, i) => dots(s.x, s.y, i === 0 ? headPattern() : P.body));
+  }
+
+  function frame(t) {
+    const dt = Math.min(t - last, 250); last = t;
+    if (state === 'running') {
+      acc += dt;
+      while (acc >= interval() && state === 'running') { acc -= interval(); step(); syncUi(); }
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- input ----
+  const keyMap = {
+    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right',
+    '2': 'up', '8': 'down', '4': 'left', '6': 'right'
+  };
+  function press(k) {
+    if (keyMap[k]) turn(keyMap[k]);
+    else if (k === '5' || k === ' ' || k === 'Enter' || k === 'p' || k === 'P') togglePause();
+    else if (k === '*' || k === '-') setLevel(level - 1);
+    else if (k === '#' || k === '+' || k === '=') setLevel(level + 1);
+    else if (k === '0') toggleWalls();
+    else return false;
+    return true;
+  }
+  function flash(k) {
+    const b = document.querySelector('.key[data-k="' + CSS.escape(k) + '"]');
+    if (b) { b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 90); }
+  }
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('.key') && (e.key === 'Enter' || e.key === ' ')) return; // let the focused key click
+    if (press(e.key)) {
+      e.preventDefault();
+      const rev = { up: '2', down: '8', left: '4', right: '6' };
+      flash(keyMap[e.key] ? rev[keyMap[e.key]] : ({ ' ': '5', Enter: '5', '-': '*', '+': '#', '=': '#' }[e.key] || e.key));
+    }
+  });
+  $('keypad').addEventListener('pointerdown', e => {
+    const b = e.target.closest('.key[data-k]');
+    if (!b) return;
+    e.preventDefault(); press(b.dataset.k);
+  });
+  $('keypad').addEventListener('click', e => {
+    const b = e.target.closest('.key[data-k]');
+    if (b && e.detail === 0) press(b.dataset.k); // keyboard activation of a focused key
+  });
+
+  let touch = null;
+  const lcd = $('lcd');
+  lcd.addEventListener('pointerdown', e => { touch = { x: e.clientX, y: e.clientY }; });
+  lcd.addEventListener('pointerup', e => {
+    if (!touch) return;
+    const dx = e.clientX - touch.x, dy = e.clientY - touch.y; touch = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return togglePause();
+    turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  });
+  addEventListener('blur', () => { if (state === 'running') togglePause(); });
+
+  reset();
+  $('best').textContent = best;
+  $('ovHint').textContent = walls ? 'WALLS ON · PRESS 5' : 'NO WALLS · PRESS 5';
+  syncUi();
+  requestAnimationFrame(t => { last = t; frame(t); });
+})();
+</script>
+</body>
+</html>
