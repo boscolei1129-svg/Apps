@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bosco's Ledger</title>
+<meta name="description" content="MPay spending tracker: weekly safe-to-spend, limits, trends, and screenshots read on the phone.">
+<meta name="theme-color" content="#ECF1EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A1311" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@600;700;800&display=swap">
+<style>
+/* Layout: one phone column on a pale jade ground. A dark hero card patterned after the wave paving of Senado Square leads Home;
+   each section is labelled on the ground with its card beneath; a frosted tab bar with a raised Add button.
+   Money columns are set in Plex Mono so they line up like a passbook. */
+:root{
+  --bg:#ECF1EE; --surface:#FFFFFF; --sunk:#F2F6F4; --ink:#0F1F1B; --muted:#596A65; --faint:#7C8B87;
+  --line:#DDE5E2; --grid:#EAF0ED; --axis:#C7D2CE;
+  --accent:#0D7A64; --on-accent:#FFFFFF; --accent-soft:#D6EEE6;
+  --c-spend:#D4552C; --c-in:#0B8A6C; --c-games:#4E57C9;
+  --spend-soft:#FBE7DF; --games-soft:#E4E6F8;
+  --over:#B4382A; --over-soft:#F8E0DB; --warn:#875800; --warn-soft:#F6EACB;
+  --hero:#0F2C26; --hero-2:#1B4D40; --hero-ink:#EEF6F2; --hero-muted:#A6C8BE; --hero-track:rgba(255,255,255,.14);
+  --hero-fill:#7FE0C2; --hero-over:#FF9C86; --hero-wave:rgba(255,255,255,.07);
+  --tabbar:rgba(255,255,255,.8); --scrim:rgba(8,22,18,.45);
+  --shadow:0 1px 2px rgba(15,44,38,.05),0 10px 28px -14px rgba(15,44,38,.16);
+  --display:"Schibsted Grotesk","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  --body:"IBM Plex Sans","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r:20px; --r-sm:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1311; --surface:#121D1A; --sunk:#0F1916; --ink:#E4EDEA; --muted:#97A9A4; --faint:#768984;
+  --line:#22322D; --grid:#1A2824; --axis:#2E403A;
+  --accent:#3CC29E; --on-accent:#04211A; --accent-soft:#143A31;
+  --c-spend:#E0653F; --c-in:#1FA680; --c-games:#7E86E4;
+  --spend-soft:#3A2119; --games-soft:#232A4E;
+  --over:#F2806C; --over-soft:#3D1F1A; --warn:#E7B655; --warn-soft:#352A12;
+  --hero:#0F2D26; --hero-2:#1D5546;
+  --tabbar:rgba(18,29,26,.8); --scrim:rgba(0,0,0,.55);
+  --shadow:0 0 0 1px #1D2C28; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1311; --surface:#121D1A; --sunk:#0F1916; --ink:#E4EDEA; --muted:#97A9A4; --faint:#768984;
+  --line:#22322D; --grid:#1A2824; --axis:#2E403A;
+  --accent:#3CC29E; --on-accent:#04211A; --accent-soft:#143A31;
+  --c-spend:#E0653F; --c-in:#1FA680; --c-games:#7E86E4;
+  --spend-soft:#3A2119; --games-soft:#232A4E;
+  --over:#F2806C; --over-soft:#3D1F1A; --warn:#E7B655; --warn-soft:#352A12;
+  --hero:#0F2D26; --hero-2:#1D5546;
+  --tabbar:rgba(18,29,26,.8); --scrim:rgba(0,0,0,.55);
+  --shadow:0 0 0 1px #1D2C28; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:14px calc(104px + env(safe-area-inset-bottom,0px))}
+.app{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.page{display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.strong{font-weight:600}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px}
+.avatar{width:42px;height:42px;flex:none;display:block}
+.eyebrow{font-size:12px;color:var(--muted);letter-spacing:.02em}
+.status{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px 4px 8px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.chip.ok{background:var(--accent-soft);color:var(--accent)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.over{background:var(--over-soft);color:var(--over)}
+.notice{border-radius:var(--r-sm);padding:12px 14px;font-size:14px;display:flex;gap:12px;background:var(--warn-soft)}
+.notice > svg{flex:none;width:20px;height:20px;stroke:var(--warn);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
+.notice > div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.notice b{color:var(--warn)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-align:left}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:24px;padding:20px 20px 16px;color:var(--hero-ink);
+  background:radial-gradient(120% 90% at 100% 0%,var(--hero-2) 0%,var(--hero) 62%);display:flex;flex-direction:column;gap:10px;isolation:isolate}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='22' viewBox='0 0 64 22'%3E%3Cpath d='M-2 11 C 10 -1, 22 -1, 32 11 S 54 23, 66 11' fill='none' stroke='white' stroke-opacity='.075' stroke-width='6'/%3E%3C/svg%3E");
+  -webkit-mask-image:linear-gradient(105deg,transparent 30%,#000 85%);mask-image:linear-gradient(105deg,transparent 30%,#000 85%)}
+.hero-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hero-label{font:700 12px var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--hero-muted)}
+.hero-range{font-size:12px;color:var(--hero-muted)}
+.big{font-family:var(--display);font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-top:2px}
+.big small{font:600 15px var(--body);letter-spacing:0;color:var(--hero-muted);margin-right:8px;vertical-align:.55em}
+.big .neg{color:var(--hero-over)}
+.hero-sub{font-size:14px;color:var(--hero-ink)}
+.hbar{height:8px;border-radius:99px;background:var(--hero-track);overflow:hidden;margin-top:4px}
+.hbar > span{display:block;height:100%;border-radius:99px}
+.hero-note{font-size:13px;color:var(--hero-muted)}
+.hero-note .num{color:var(--hero-ink)}
+.hero-foot{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:6px;padding-top:12px;
+  border-top:1px solid var(--hero-track);font-size:13px;color:var(--hero-muted)}
+.hero-foot .num{color:var(--hero-ink);font-size:15px;font-weight:600}
+
+/* sections + cards */
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:0 4px}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row-between{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.bar{height:8px;border-radius:99px;background:var(--grid);overflow:hidden;display:flex}
+.bar > span{display:block;height:100%;border-radius:99px}
+
+.limits{display:flex;flex-direction:column;gap:16px}
+.limit{display:grid;grid-template-columns:38px minmax(0,1fr);gap:4px 12px;align-items:center}
+.limit .ico{grid-row:1 / span 3}
+.limit .bar{height:10px}
+
+/* icons */
+.ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--sunk);color:var(--muted);flex:none}
+.ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ico.games{background:var(--games-soft);color:var(--c-games)}
+.ico.in{background:var(--accent-soft);color:var(--accent)}
+.ico.need{background:var(--warn-soft);color:var(--warn)}
+
+/* segmented pills */
+.seg{display:flex;gap:4px;padding:4px;background:var(--sunk);border-radius:14px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;border:0;background:none;border-radius:10px;padding:7px 14px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,44,38,.12)}
+
+.cats{display:flex;flex-direction:column;gap:2px;margin:0 -6px}
+.cat{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 6px;border:0;background:none;text-align:left;border-radius:14px;width:100%}
+.cat:hover{background:var(--sunk)}
+.cat .ico{grid-row:1 / span 2}
+.cat .bar{grid-column:2 / -1;height:6px}
+.cat .pct{color:var(--muted);font-size:12px;margin-left:6px}
+.inc-list{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+
+/* sparkline card on home */
+.spark{border:0;text-align:left;width:100%;cursor:pointer}
+.spark-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.spark-v{font:700 22px var(--display);letter-spacing:-.01em}
+.spark-v small{font:500 13px var(--body);color:var(--muted);margin-left:4px}
+#spark{height:56px}
+#spark svg{display:block;width:100%;height:56px;overflow:visible}
+
+/* trends */
+.chartcard{gap:10px;padding:16px 14px 14px}
+.readout{display:flex;flex-direction:column;gap:6px;padding:0 2px;min-height:64px}
+.ro-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.ro-head b{color:var(--ink);font-weight:600}
+.ro-tag{font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--sunk);color:var(--muted)}
+.ro-vals{display:flex;gap:6px 22px;flex-wrap:wrap}
+.ro{display:flex;flex-direction:column;gap:0}
+.ro-v{font:700 22px var(--display);letter-spacing:-.01em;line-height:1.2}
+.ro-l{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.key{display:inline-block;width:14px;height:3px;border-radius:2px;flex:none}
+.chart{width:100%;min-width:0;position:relative}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.chart svg:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
+.ax{fill:var(--faint);font:11px var(--mono)}
+.ax-lbl{fill:var(--muted);font:600 11px var(--body);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.legend{display:flex;gap:8px;flex-wrap:wrap}
+.legend button{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px 5px 10px;font-size:13px;font-weight:600;color:var(--ink)}
+.legend button[aria-pressed="false"]{color:var(--faint);background:transparent}
+.legend button[aria-pressed="false"] .key{opacity:.35}
+.legend.static{font-size:12px;color:var(--muted);gap:14px}
+.legend.static i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .lbl{font-size:12px;color:var(--muted);line-height:1.3}
+.tile .v{font:700 19px var(--display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.tile .v.pos{color:var(--accent)} .tile .v.neg{color:var(--over)}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.trio div{display:flex;flex-direction:column;gap:0;min-width:0}
+.trio .lbl{font-size:12px;color:var(--muted)}
+.trio .v{font-size:15px;font-weight:600}
+.trend{display:flex;flex-direction:column;gap:12px}
+.trend .t{display:grid;grid-template-columns:62px minmax(0,1fr) 72px;gap:10px;align-items:center;font-size:13px}
+.trend .bar{height:14px;background:transparent;gap:2px;border-radius:5px}
+.trend .bar > span{border-radius:4px}
+.tablecard summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.tablecard summary::-webkit-details-marker{display:none}
+.tablecard summary::after{content:"Show";font-size:13px;color:var(--accent)}
+.tablecard[open] summary::after{content:"Hide"}
+.tablewrap{overflow-x:auto;margin:0 -4px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:right;font-weight:600;color:var(--muted);font-size:12px;padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:8px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.pos{color:var(--accent)} td.neg{color:var(--over)}
+
+/* activity */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters select{border:0;background:var(--surface);box-shadow:var(--shadow);border-radius:12px;padding:8px 12px;max-width:100%;font-size:14px}
+.rangechip{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent);border:0;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600}
+.days{display:flex;flex-direction:column;gap:18px}
+.day{display:flex;flex-direction:column;gap:8px}
+.dayhead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:0 6px;font-weight:600}
+.daycard{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:4px 8px}
+.tx{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:1px 12px;align-items:center;padding:10px 4px;border:0;background:none;text-align:left;width:100%;border-radius:14px}
+.daycard .tx + .tx{border-top:1px solid var(--line);border-radius:0}
+button.tx:hover{background:var(--sunk)}
+.tx .ico{grid-column:1;grid-row:1 / span 2}
+.tx .payee{grid-column:2;grid-row:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.tx .amt{grid-column:3;grid-row:1;text-align:right;font-weight:600}
+.tx .amt.in{color:var(--accent)}
+.tx .meta{grid-column:2;grid-row:2;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap;min-width:0}
+.tx .bal{grid-column:3;grid-row:2;text-align:right;font-size:12px;color:var(--faint)}
+.tag{border-radius:6px;padding:0 7px;font-size:12px;background:var(--sunk);color:var(--muted)}
+.tag.need{background:var(--warn-soft);color:var(--warn);font-weight:600}
+.tag.games{background:var(--games-soft);color:var(--c-games)}
+.bad{color:var(--over);font-weight:600}
+
+/* forms */
+label.field{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+textarea{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:11px 12px;width:100%;font:14px/1.45 var(--body);resize:vertical;min-height:110px}
+.prog{height:6px;border-radius:99px;background:var(--grid);overflow:hidden}
+.prog > span{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .3s}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=number],input[type=text]{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:11px 12px;width:100%;font-weight:400}
+.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:600;background:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:var(--sunk);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.drop{border:1.5px dashed var(--axis);border-radius:16px;padding:20px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--sunk)}
+.drop input{max-width:100%}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.preview{display:flex;flex-direction:column;max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:0 8px}
+.preview .tx + .tx{border-top:1px solid var(--line);border-radius:0}
+.rules{display:flex;flex-direction:column;gap:8px}
+.rules > div{display:flex;justify-content:space-between;gap:10px;font-size:14px;align-items:center}
+.rules > div > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xbtn{border:1px solid var(--line);background:none;border-radius:8px;padding:2px 8px;font-size:12px}
+.limitrow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;align-items:center;font-size:14px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:26px 26px 0 0;
+  padding:10px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:14px;max-height:88vh;overflow:auto}
+.grabber{width:40px;height:5px;border-radius:99px;background:var(--line);align-self:center;margin-bottom:4px}
+.picker{display:flex;flex-wrap:wrap;gap:8px}
+.picker button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px 6px 8px;font-size:14px}
+.picker button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.picker button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
+
+/* tab bar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--tabbar);
+  -webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(5,1fr);align-items:end;
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs button{background:none;border:0;padding:6px 2px;font-size:11px;font-weight:600;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+nav.tabs svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+nav.tabs .plus{width:48px;height:48px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;margin-top:-22px;
+  box-shadow:0 8px 18px -8px var(--accent),0 0 0 4px var(--bg)}
+nav.tabs .plus svg{stroke-width:2.4}
+nav.tabs .dot{position:absolute;top:2px;right:calc(50% - 22px);background:var(--warn);color:var(--surface);border-radius:999px;font-size:10px;padding:0 5px;line-height:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){
+  .bar > span,.hbar > span{transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .page:not([hidden]){animation:rise .28s ease-out}
+  @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <svg class="avatar" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="logoG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12996F"></stop><stop offset="1" stop-color="#053A2D"></stop></linearGradient></defs><rect width="512" height="512" rx="114" fill="url(#logoG)"></rect><rect x="128" y="268" width="68" height="128" rx="34" fill="#FFFFFF" fill-opacity="0.45"></rect><rect x="222" y="196" width="68" height="200" rx="34" fill="#FFFFFF" fill-opacity="0.72"></rect><rect x="316" y="116" width="68" height="280" rx="34" fill="#FFFFFF"></rect><circle cx="350" cy="150" r="14" fill="#12996F"></circle></svg>
+    <div><div class="eyebrow" id="todayLbl"></div><h1>Bosco's Ledger</h1></div>
+  </header>
+
+  <!-- HOME -->
+  <section id="tab-home" class="page">
+    <div id="statusbox" class="status"></div>
+
+    <div class="hero">
+      <div class="hero-row"><span class="hero-label">Safe to spend this week</span><span id="weekRange" class="hero-range"></span></div>
+      <div id="safeBig" class="big"></div>
+      <div id="perDay" class="hero-sub"></div>
+      <div class="hbar" id="weekBar"></div>
+      <div id="weekNote" class="hero-note"></div>
+      <div class="hero-foot"><span id="balWhen">MPay balance</span><span id="balNow" class="num"></span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Monthly limits</h2><span id="daysLeft" class="small muted"></span></div>
+      <div class="card"><div id="limits" class="limits"></div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Where my money went</h2></div>
+      <div class="card">
+        <div id="months" class="seg" role="group" aria-label="Month"></div>
+        <div class="row-between"><span class="muted small" id="monthLabel"></span><span class="num strong" id="monthTotal"></span></div>
+        <div id="cats" class="cats"></div>
+        <div id="incomeBox" class="small"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Spending trend</h2><button class="linkbtn small" data-go="trends">Open Trends</button></div>
+      <button class="card spark" data-go="trends" aria-label="Open Trends">
+        <span class="spark-top"><span><span class="small muted" style="display:block">Average spent per week, last 8 weeks</span><span class="spark-v" id="sparkAvg"></span></span><span class="small muted" id="sparkNow" style="text-align:right"></span></span>
+        <span id="spark" style="display:block"></span>
+      </button>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Savings goal</h2></div>
+      <div class="card" id="goalCard"></div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="tab-activity" class="page" hidden>
+    <div class="filters">
+      <select id="filterCat" aria-label="Filter by category"></select>
+      <select id="filterMonth" aria-label="Filter by month"></select>
+      <span id="rangeBox"></span>
+    </div>
+    <div id="txlist" class="days"></div>
+  </section>
+
+  <!-- TRENDS -->
+  <section id="tab-trends" class="page" hidden>
+    <div id="modeSeg" class="seg" role="group" aria-label="Group by">
+      <button data-mode="day">Days</button><button data-mode="week">Weeks</button><button data-mode="month">Months</button>
+    </div>
+
+    <div class="card chartcard">
+      <div id="readout" class="readout" aria-live="polite"></div>
+      <div id="lineChart" class="chart"></div>
+      <div id="legend" class="legend" role="group" aria-label="Lines to show"></div>
+      <p id="chartNote" class="small muted"></p>
+    </div>
+
+    <div id="tiles" class="tiles"></div>
+
+    <div class="sec">
+      <div class="sec-h"><h2 id="detailTitle">This week</h2></div>
+      <div class="card" id="detail"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>MPay balance</h2><span class="small muted" id="balRange"></span></div>
+      <div class="card chartcard">
+        <div id="balReadout" class="readout" style="min-height:0"></div>
+        <div id="balChart" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Games vs everything else</h2><span class="small muted">by month</span></div>
+      <div class="card">
+        <div class="legend static"><span><i style="background:var(--c-games)"></i>Games</span><span><i style="background:var(--c-spend)"></i>Everything else</span></div>
+        <div id="trend" class="trend"></div>
+      </div>
+    </div>
+
+    <details class="card tablecard" id="tableCard">
+      <summary>Numbers as a table</summary>
+      <div class="tablewrap"><table id="numTable"></table></div>
+    </details>
+  </section>
+
+  <!-- ADD -->
+  <section id="tab-add" class="page" hidden>
+    <div class="sec">
+      <div class="sec-h"><h2>Add MPay screenshots</h2></div>
+      <div class="card">
+        <ol class="steps">
+          <li>In MPay open <b>Transactions</b>, pick the month, tap <b>All</b>.</li>
+          <li>Screenshot from the top down to the last transaction you already added. Overlapping screenshots are fine.</li>
+          <li>Pick them below and tap <b>Read on this phone</b>. Every line is checked against MPay's balance before anything is added.</li>
+        </ol>
+        <div class="drop">
+          <input type="file" id="shots" accept="image/png,image/jpeg,image/webp,image/heic" multiple>
+          <span id="shotInfo" class="small muted">No screenshots picked</span>
+        </div>
+        <div class="btns"><button class="btn" id="ocrBtn" disabled>Read on this phone</button><button class="btn ghost" id="readBtn" hidden disabled>Read with Claude</button><button class="btn ghost" id="stopBtn" hidden>Stop</button></div>
+        <div class="prog" id="readProg" hidden><span></span></div>
+        <div id="readStatus" class="small muted" aria-live="polite"></div>
+        <p class="small muted">Reading happens on your phone, without Claude. The first time, it downloads the reader (about 9 MB) and keeps it on your phone.</p>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Or paste the text</h2></div>
+      <div class="card">
+        <p class="small muted">In Photos, open a screenshot, tap the Live Text button, then <b>Copy All</b> and paste it here. You can paste several screenshots one after another.</p>
+        <textarea id="pasteBox" rows="5" placeholder="Paste MPay text here"></textarea>
+        <div class="btns"><button class="btn ghost" id="pasteBtn" disabled>Read text</button></div>
+        <div id="pasteStatus" class="small muted" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div id="previewBox" class="sec" hidden></div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Check my balance</h2></div>
+      <div class="card">
+        <p class="small muted">Type the balance MPay shows right now. If it doesn't match, some transactions are missing.</p>
+        <label class="field">MPay balance (MOP)<input type="number" id="cpInput" inputmode="decimal" step="0.01" placeholder="250.00"></label>
+        <button class="btn ghost" id="cpBtn">Check balance</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="page" hidden>
+    <div class="sec">
+      <div class="sec-h"><h2>Budget</h2></div>
+      <div class="card">
+        <label class="field">Weekly spending budget (MOP)
+          <input type="number" id="weeklyInput" inputmode="decimal" step="1">
+        </label>
+        <p class="small muted" id="weeklyHint"></p>
+        <h3>Monthly limits</h3>
+        <div id="limitInputs" class="rules"></div>
+        <button class="btn" id="saveBudget">Save budget</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Auto-categorizing</h2></div>
+      <div class="card">
+        <div id="accuracy"></div>
+        <h3>Rules you've taught it</h3>
+        <div id="ruleList" class="rules"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Backup</h2></div>
+      <div class="card">
+        <p class="small">Your changes are saved on this phone only. Clearing Safari data or switching phones erases them, so save a backup after each import.</p>
+        <div id="backupInfo" class="small muted"></div>
+        <div class="btns">
+          <button class="btn" id="backupBtn">Save backup file</button>
+          <label class="btn ghost" for="restoreFile" style="display:inline-block">Restore backup</label>
+          <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <button data-tab="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>Home</button>
+  <button data-tab="activity"><svg viewBox="0 0 24 24"><path d="M8 6.5h12M8 12h12M8 17.5h8"/><circle cx="4.5" cy="6.5" r=".9"/><circle cx="4.5" cy="12" r=".9"/><circle cx="4.5" cy="17.5" r=".9"/></svg>Activity<span class="dot" id="needDot" hidden></span></button>
+  <button data-tab="add"><span class="plus"><svg viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></svg></span>Add</button>
+  <button data-tab="trends"><svg viewBox="0 0 24 24"><path d="M3.5 17.5 9 12l4 3.5 7.5-8"/><path d="M15 7.5h5.5V13"/></svg>Trends</button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9" cy="17" r="2.3"/></svg>Settings</button>
+</nav>
+
+<div id="sheetHost"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+// [datetime, payee, amount cents, balance cents, category, split repayment, discount cents]
+// July–October history transcribed from MPay screenshots; every row checked against MPay's running balance.
+// Public copy: no transaction history. Bring your data in with Settings → Restore backup.
+const SEED = [];
+const MY_RULES = [];
+const MY_FAMILY = [];
+const MY_CHECKPOINTS = [];
+
+const SPEND = ['games','groceries','eating','snacks','transport','fun','shopping','people','unknown'];
+const INCOME = ['allowance','topup','from_people'];
+const LABEL = {games:'Games',groceries:'Groceries',eating:'Eating out',snacks:'Snacks & drinks',transport:'Transport',fun:'Going out',shopping:'Shopping',people:'Paid to people',unknown:'Unknown shop',allowance:'Allowance',topup:'Cash top-up',from_people:'From people',ignore:'Not counted'};
+const NEEDS = new Set(['people','unknown','from_people']);
+// Generic rules ship everywhere; the personal ones (shops, family) live with the personal data
+const RULES = [[/Top Up|現金加值/i,'topup'],[/^BUS-|輕軌|停車場/i,'transport'], ...MY_RULES];
+const FAMILY = new Set(MY_FAMILY);
+const KEY = 'bosco-ledger-v1';
+const DEFAULT = {added:[],overrides:{},confirmed:{},userRules:{},weekly:57500,limits:{games:50000},
+  checkpoints:MY_CHECKPOINTS.slice(),goal:null,lastBackup:null,
+  ui:{mode:'week',show:{spend:true,inc:true,games:false}}};
+
+// line icons, 24×24, stroked
+const IC = {
+  games:'<path d="M7.5 8.5h9a4.5 4.5 0 0 1 4.5 4.5v.8a3 3 0 0 1-5.3 1.9L14.2 14H9.8l-1.5 1.7A3 3 0 0 1 3 13.8V13a4.5 4.5 0 0 1 4.5-4.5z"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>',
+  groceries:'<path d="M4 9.5h16l-1.6 8.8a2 2 0 0 1-2 1.7H7.6a2 2 0 0 1-2-1.7z"/><path d="M8.5 9.5 11 4.5M15.5 9.5 13 4.5M9.5 13v3.5M14.5 13v3.5"/>',
+  eating:'<path d="M3.5 11.5h17a8.5 7 0 0 1-17 0z"/><path d="M13.5 9 17 3.5M16.5 9.5l4-4"/>',
+  snacks:'<path d="M6.5 8.5h11l-1.3 10.7a2 2 0 0 1-2 1.8H9.8a2 2 0 0 1-2-1.8z"/><path d="M5.5 8.5h13M12.5 8.5l2-5.5"/><path d="M9.5 16h.01M12 17.5h.01M14.5 15.5h.01"/>',
+  transport:'<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14M8 17.5V20M16 17.5V20M8.5 14.3h.01M15.5 14.3h.01"/>',
+  fun:'<path d="M12 3.8l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.1l-4.8 2.6.9-5.4-3.9-3.8 5.4-.8z"/>',
+  shopping:'<path d="M5.5 8h13l-1 12h-11z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>',
+  people:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0M16 12.5h5M18.8 10l2.5 2.5-2.5 2.5"/>',
+  unknown:'<path d="M4 9.5 5.5 4.5h13L20 9.5M5 9.5V19.5h14V9.5M4 9.5h16"/><path d="M10 19.5v-5h4v5"/>',
+  allowance:'<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M3.5 9h17M12 9v11M12 9C10.5 6 7 5.5 7 7.6 7 9 12 9 12 9zM12 9c1.5-3 5-3.5 5-1.4C17 9 12 9 12 9z"/>',
+  topup:'<rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 10v4M17.5 10v4"/>',
+  from_people:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0M21 12.5h-5M18.5 10 16 12.5l2.5 2.5"/>',
+  ignore:'<circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  alert:'<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17h.01"/>'
+};
+const svgI = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]||IC.unknown}</svg>`;
+const icon = (c, need) => `<span class="ico ${need?'need':c==='games'?'games':INCOME.includes(c)?'in':''}">${svgI(c)}</span>`;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = c => (c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = c => Math.round(c/100).toLocaleString('en-US');
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOWL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const dObj = s => new Date(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
+const dayLabel = s => { const d=dObj(s); return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
+const monthLabel = m => `${MON[+m.slice(5,7)-1]} ${m.slice(0,4)}`;
+const person = p => p.startsWith('Transfer ') ? p.slice(9) : null;
+const ruleKey = r => r.payee + (r.amt < 0 ? '|out' : '|in');
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const mondayOf = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay()+6)%7); return x; };
+const today0 = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+
+let state = load();
+function load(){
+  const base = JSON.parse(JSON.stringify(DEFAULT));
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') return Object.assign(base, s); } catch(e) {}
+  return base;
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
+if (!state.ui || typeof state.ui !== 'object') state.ui = JSON.parse(JSON.stringify(DEFAULT.ui));
+state.ui.show = Object.assign({spend:true,inc:true,games:false}, state.ui.show || {});
+if (!['day','week','month'].includes(state.ui.mode)) state.ui.mode = 'week';
+
+let rows = [];
+function buildRows(){
+  const seed = SEED.map(a => ({id:a[0]+'|'+a[2], dt:a[0], payee:a[1], amt:a[2], bal:a[3], base:a[4], split:!!a[5], disc:a[6], src:'seed'}));
+  const ids = new Set(seed.map(r=>r.id));
+  const all = seed.concat(state.added.filter(r => !ids.has(r.id)));
+  all.sort((a,b) => a.dt < b.dt ? -1 : a.dt > b.dt ? 1 : 0);
+  all.forEach((r,i) => { r.ok = i === 0 ? true : all[i-1].bal + r.amt === r.bal; });
+  rows = all;
+}
+function guessOf(r){ if (r.split) return r.base; return state.userRules[ruleKey(r)] || r.base; }
+function catOf(r){ return state.overrides[r.id] || guessOf(r); }
+function needsLabel(r){ return NEEDS.has(catOf(r)) && !state.confirmed[r.id]; }
+function autoCat(payee, amt){
+  const u = state.userRules[payee + (amt<0?'|out':'|in')]; if (u) return u;
+  for (const [re,c] of RULES) if (re.test(payee)) return c;
+  if (person(payee)) return amt < 0 ? 'people' : 'from_people';
+  return amt < 0 ? 'unknown' : 'from_people';
+}
+function spendIn(list){ const m={}; for (const r of list){ const c=catOf(r); if (SPEND.includes(c)) m[c]=(m[c]||0)-r.amt; } return m; }
+function incomeIn(list){ const m={}; for (const r of list){ const c=catOf(r); if (INCOME.includes(c)) m[c]=(m[c]||0)+r.amt; } return m; }
+const sum = o => Object.values(o).reduce((a,b)=>a+b,0);
+
+// one transaction row, shared by Activity and the import preview
+function txHTML(r, {cat, need, button=true, when, attrs='', extra=''}){
+  const tag = button ? 'button' : 'div';
+  return `<${tag} class="tx" ${button?(attrs||`data-id="${esc(r.id)}"`):''}>
+    ${icon(cat, need)}
+    <span class="payee">${esc(r.payee)}</span>
+    <span class="amt num ${r.amt>0?'in':''}">${r.amt>0?'+':'−'}${money(Math.abs(r.amt))}</span>
+    <span class="meta"><span>${when}</span><span class="tag ${need?'need':''} ${cat==='games'?'games':''}">${need?'Needs a label':LABEL[cat]}</span>${r.split?'<span>split bill</span>':''}${r.disc?`<span>saved ${money(r.disc)}</span>`:''}${extra}</span>
+    <span class="bal num">${r.ok===false?'<span class="bad">check · </span>':''}bal ${money(r.bal)}</span></${tag}>`;
+}
+
+// ---------- HOME ----------
+let selMonth = null;
+function render(){
+  buildRows();
+  const last = rows[rows.length-1];
+  const now = new Date(); const t0 = today0();
+  $('#todayLbl').textContent = `${DOWL[now.getDay()]} ${now.getDate()} ${MONL[now.getMonth()]}`;
+
+  // status: row check + balance check (or a welcome when the ledger is empty)
+  if (!last){
+    $('#statusbox').innerHTML = `<div class="card"><h3>Start your ledger</h3><p class="small muted">Add your MPay screenshots, or bring your history over from another copy with Settings → Restore backup.</p><div class="btns"><button class="btn" data-go="add">Add screenshots</button><button class="btn ghost" data-go="settings">Restore backup</button></div></div>`;
+  } else {
+    const okN = rows.filter(r=>r.ok).length;
+    const cp = state.checkpoints.filter(c => c.dt >= last.dt).sort((a,b)=>a.dt<b.dt?-1:1).pop();
+    let chips = `<span class="chip ${okN===rows.length?'ok':'warn'}">${svgI(okN===rows.length?'check':'alert')}${okN} of ${rows.length} rows match MPay</span>`;
+    if (cp && cp.bal === last.bal) chips += `<span class="chip ok">${svgI('check')}Matches your balance check on ${dayLabel(cp.dt)}</span>`;
+    $('#statusbox').innerHTML = `<div class="chips">${chips}</div>`;
+  }
+
+  // week
+  const mon = mondayOf(t0); const sun = addDays(mon,6); const next = addDays(mon,7);
+  const wk = rows.filter(r => r.dt >= ymd(mon) && r.dt < ymd(next));
+  const spent = sum(spendIn(wk)); const budget = state.weekly; const left = budget - spent;
+  const daysLeftWk = Math.max(1, Math.round((next - t0)/864e5));
+  $('#weekRange').textContent = `Mon ${mon.getDate()} ${MON[mon.getMonth()]} – Sun ${sun.getDate()} ${MON[sun.getMonth()]}`;
+  $('#safeBig').innerHTML = left >= 0 ? `<small>MOP</small>${money(left)}` : `<small>Over by</small><span class="neg">${money(-left)}</span>`;
+  $('#perDay').textContent = left > 0
+    ? (daysLeftWk > 1 ? `About MOP ${money0(left/daysLeftWk)} a day for the next ${daysLeftWk} days` : `MOP ${money0(left)} left for today`)
+    : 'Try to hold off until Monday, when the new week starts.';
+  const pct = Math.min(100, Math.max(0, spent/budget*100));
+  $('#weekBar').innerHTML = `<span style="width:${pct}%;background:${left<0?'var(--hero-over)':'var(--hero-fill)'}"></span>`;
+  const capNote = last && left > last.bal ? ` Your MPay balance is only <span class="num">${money(last.bal)}</span>.` : '';
+  $('#weekNote').innerHTML = `Spent <span class="num">${money(spent)}</span> of your <span class="num">${money(budget)}</span> weekly budget.${capNote}`;
+  $('#balWhen').textContent = last ? `MPay balance · ${dayLabel(last.dt)} ${last.dt.slice(11,16)}` : 'MPay balance';
+  $('#balNow').textContent = last ? `MOP ${money(last.bal)}` : '—';
+
+  // limits
+  const thisMonth = ymd(t0).slice(0,7);
+  const ms = spendIn(rows.filter(r => r.dt.startsWith(thisMonth)));
+  const dim = new Date(t0.getFullYear(), t0.getMonth()+1, 0).getDate();
+  $('#daysLeft').textContent = `${MON[t0.getMonth()]} · ${dim - t0.getDate()} days left`;
+  const lim = Object.entries(state.limits).filter(([,v])=>v>0);
+  $('#limits').innerHTML = lim.length ? lim.map(([c,v]) => {
+    const s = Math.max(0, ms[c]||0); const over = s > v; const p = Math.min(100, s/v*100);
+    const color = c==='games' ? 'var(--c-games)' : 'var(--accent)';
+    return `<div class="limit">${icon(c)}
+      <div class="row-between"><span class="strong">${LABEL[c]}</span><span class="num small">${money(s)} / ${money(v)}</span></div>
+      <div class="bar"><span style="width:${p}%;background:${over?'var(--over)':color}"></span></div>
+      <span class="chip ${over?'over':(s>v*.8?'warn':'ok')}" style="justify-self:start">${over ? `Over by MOP ${money(s-v)}` : `MOP ${money(v-s)} left`}</span></div>`;
+  }).join('') : `<span class="muted small">No limits set. Add one in Settings.</span>`;
+
+  // where it went
+  const months = [...new Set(rows.map(r=>r.dt.slice(0,7)))];
+  if (!selMonth || !months.includes(selMonth)) selMonth = months.includes(thisMonth) ? thisMonth : months[months.length-1];
+  $('#months').innerHTML = months.map(m => `<button data-month="${m}" aria-pressed="${m===selMonth}">${MON[+m.slice(5,7)-1]}</button>`).join('');
+  const sm = rows.filter(r => r.dt.startsWith(selMonth));
+  const sp = spendIn(sm); const tot = sum(sp);
+  const first = sm[0]?.dt, lastd = sm[sm.length-1]?.dt;
+  $('#monthLabel').textContent = first ? `${dayLabel(first)} – ${dayLabel(lastd)}` : '';
+  $('#monthTotal').textContent = `MOP ${money(tot)}`;
+  const max = Math.max(1, ...Object.values(sp));
+  $('#cats').innerHTML = Object.entries(sp).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]).map(([c,v]) => `
+    <button class="cat" data-cat="${c}" data-m="${selMonth}">${icon(c, NEEDS.has(c))}
+    <span>${LABEL[c]}${NEEDS.has(c)?' <span class="tag need">label</span>':''}</span>
+    <span class="num">${money(v)}<span class="pct">${tot>0?Math.round(v/tot*100):0}%</span></span>
+    <span class="bar"><span style="width:${Math.max(0,v)/max*100}%;background:${c==='games'?'var(--c-games)':'var(--accent)'}"></span></span></button>`).join('');
+  const inc = incomeIn(sm);
+  $('#incomeBox').innerHTML = `<div class="inc-list"><div class="row-between"><span class="strong">Money in</span><span class="num strong">MOP ${money(sum(inc))}</span></div>` +
+    Object.entries(inc).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="row-between"><span class="muted">${LABEL[c]}</span><span class="num">${money(v)}</span></div>`).join('') + `</div>`;
+
+  renderGoal();
+  const need = rows.filter(needsLabel).length;
+  $('#needDot').hidden = !need; $('#needDot').textContent = need;
+  renderActivity(); renderSettings();
+  if (!$('#tab-home').hidden) renderSpark();
+  if (!$('#tab-trends').hidden) renderTrends();
+}
+
+function renderGoal(){
+  const g = state.goal;
+  if (!g){
+    $('#goalCard').innerHTML = `<p class="small muted">No goal yet. When you have something to save for, add it here and watch the bar fill up.</p>
+      <div class="btns"><button class="btn ghost" id="goalNew">Set a goal</button></div>`;
+    $('#goalNew').onclick = () => goalForm();
+  } else {
+    const p = Math.min(100, g.saved/g.target*100);
+    $('#goalCard').innerHTML = `<div class="row-between"><h3>Saving for ${esc(g.name)}</h3><button class="linkbtn small" id="goalEdit">Edit</button></div>
+      <div class="row-between"><span class="num" style="font-size:22px;font-weight:600">${money(g.saved)}</span><span class="num muted">of ${money(g.target)}</span></div>
+      <div class="bar" style="height:10px"><span style="width:${p}%;background:var(--accent)"></span></div>
+      <span class="small muted">MOP ${money(Math.max(0,g.target-g.saved))} to go</span>`;
+    $('#goalEdit').onclick = () => goalForm();
+  }
+}
+function goalForm(){
+  const g = state.goal || {name:'',target:0,saved:0};
+  $('#goalCard').innerHTML = `
+    <label class="field">What for<input type="text" id="gName" value="${esc(g.name)}" placeholder="New headphones"></label>
+    <label class="field">Target (MOP)<input type="number" id="gTarget" inputmode="decimal" value="${g.target?g.target/100:''}"></label>
+    <label class="field">Set aside so far (MOP)<input type="number" id="gSaved" inputmode="decimal" value="${g.saved?g.saved/100:''}"></label>
+    <div class="btns"><button class="btn" id="gSave">Save goal</button>${state.goal?'<button class="btn ghost" id="gDel">Remove goal</button>':''}<button class="btn ghost" id="gCancel">Cancel</button></div>`;
+  $('#gSave').onclick = () => { const t=Math.round(parseFloat($('#gTarget').value)*100); if(!$('#gName').value.trim()||!(t>0)){toast('Add a name and a target amount'); return;}
+    state.goal={name:$('#gName').value.trim(),target:t,saved:Math.max(0,Math.round((parseFloat($('#gSaved').value)||0)*100))}; save(); renderGoal(); toast('Goal saved'); };
+  $('#gCancel').onclick = renderGoal;
+  if ($('#gDel')) $('#gDel').onclick = () => { state.goal=null; save(); renderGoal(); toast('Goal removed'); };
+}
+
+// ---------- ACTIVITY ----------
+let fCat = 'all', fMonth = 'all', fRange = null;
+function renderActivity(){
+  const months = [...new Set(rows.map(r=>r.dt.slice(0,7)))].reverse();
+  const need = rows.filter(needsLabel).length;
+  $('#filterCat').innerHTML = `<option value="all">All categories</option><option value="need">Needs a label (${need})</option>` +
+    [...SPEND,...INCOME,'ignore'].map(c=>`<option value="${c}">${LABEL[c]}</option>`).join('');
+  $('#filterCat').value = fCat;
+  $('#filterMonth').innerHTML = `<option value="all">All months</option>` + months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  $('#filterMonth').value = fRange ? 'all' : fMonth;
+  $('#rangeBox').innerHTML = fRange ? `<button class="rangechip" id="clearRange" aria-label="Clear ${esc(fRange.label)} filter">${esc(fRange.label)} <span aria-hidden="true">✕</span></button>` : '';
+  let list = rows.slice().reverse();
+  if (fRange) list = list.filter(r => r.dt >= fRange.from && r.dt < fRange.to);
+  else if (fMonth !== 'all') list = list.filter(r => r.dt.startsWith(fMonth));
+  if (fCat === 'need') list = list.filter(needsLabel); else if (fCat !== 'all') list = list.filter(r => catOf(r) === fCat);
+  const byDay = new Map();
+  for (const r of list){ const d=r.dt.slice(0,10); if(!byDay.has(d)) byDay.set(d,[]); byDay.get(d).push(r); }
+  if (!list.length){ $('#txlist').innerHTML = `<div class="card"><p class="muted">Nothing here. Try another filter.</p></div>`; return; }
+  $('#txlist').innerHTML = [...byDay].map(([d,rs]) => {
+    const out = sum(spendIn(rs));
+    return `<div class="day"><div class="dayhead"><span>${dayLabel(d)}</span><span class="num">${out>0?'−'+money(out):''}</span></div><div class="daycard">` +
+      rs.map(r => txHTML(r, {cat:catOf(r), need:needsLabel(r), when:r.dt.slice(11,16)})).join('') + `</div></div>`;
+  }).join('');
+}
+
+function openSheet(r){
+  const cur = catOf(r);
+  const opts = r.amt < 0 ? [...SPEND,'ignore'] : [...INCOME,...SPEND,'ignore'];
+  const canRemember = !r.split;
+  let pick = cur;
+  $('#sheetHost').innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <span class="grabber" aria-hidden="true"></span>
+    <div class="row-between"><h3 id="shTitle" style="font-size:18px;min-width:0;overflow-wrap:anywhere">${esc(r.payee)}</h3><span class="num" style="white-space:nowrap;font-size:18px;font-weight:600;${r.amt>0?'color:var(--accent)':''}">${r.amt>0?'+':'−'}${money(Math.abs(r.amt))}</span></div>
+    <dl class="kv"><dt>When</dt><dd>${dayLabel(r.dt)}, ${r.dt.slice(11,19)}</dd>
+      <dt>MPay balance after</dt><dd class="num">${money(r.bal)} ${r.ok?'<span class="chip ok">matches</span>':'<span class="chip over">doesn’t add up</span>'}</dd>
+      ${r.disc?`<dt>Discount</dt><dd class="num">${money(r.disc)}</dd>`:''}
+      ${r.split?`<dt>Note</dt><dd>Friend paying back their share of a bill, so it reduces that category</dd>`:''}</dl>
+    <h2>Category</h2>
+    <div class="picker" id="picker">${opts.map(c=>`<button data-c="${c}" aria-pressed="${c===cur}">${svgI(c)}${LABEL[c]}</button>`).join('')}</div>
+    ${canRemember?`<label class="check"><input type="checkbox" id="remember" checked><span>Use this for every ${r.amt<0?'payment to':'payment from'} <b>${esc(r.payee)}</b></span></label>`:''}
+    <div class="btns"><button class="btn" id="shSave">Save</button><button class="btn ghost" id="shCancel">Cancel</button></div>
+  </div></div>`;
+  const close = () => { $('#sheetHost').innerHTML=''; };
+  $('#scrim').onclick = e => { if (e.target.id==='scrim') close(); };
+  $('#shCancel').onclick = close;
+  $('#picker').onclick = e => { const b=e.target.closest('button'); if(!b) return; pick=b.dataset.c; $('#picker').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); };
+  $('#shSave').onclick = () => {
+    const guess = guessOf(r);
+    if ($('#remember') && $('#remember').checked){
+      state.userRules[ruleKey(r)] = pick; delete state.overrides[r.id];
+      if (guessOf(r) !== pick) state.overrides[r.id] = pick;
+    } else if (pick !== guess) state.overrides[r.id] = pick; else delete state.overrides[r.id];
+    state.confirmed[r.id] = {g:guess, f:pick};
+    save(); close(); render(); toast(`Saved as ${LABEL[pick]}`);
+  };
+  $('#picker').querySelector('[aria-pressed="true"]')?.focus();
+}
+// ---------- MPay text → transactions (runs on the phone, no Claude) ----------
+// Input is either Tesseract TSV (words with positions) or plain text pasted from iPhone Live Text.
+// Each transaction is anchored on its date-time; payee, amount, balance and discount are matched
+// to the nearest anchor using the offsets the screenshot itself shows (layout-independent).
+const MP = (() => {
+  const CJK = '\\u3400-\\u9fff\\uf900-\\ufaff';
+  const fixDigits = s => s.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
+  const DT = /([12][0-9OoIl]{3})\s*[-–—.\/]\s*([0-9OoIl]{2})\s*[-–—.\/]\s*([0-9OoIl]{2})\s*([0-9OoIl]{1,2})\s*[:：.]\s*([0-9OoIl]{2})\s*[:：.]\s*([0-9OoIl]{2})/;
+  const NUM = '(\\d{1,3}(?:[,.\\s]\\d{3})*[.,]\\s?\\d{2}|\\d+[.,]\\s?\\d{2})';
+  const BAL = new RegExp('(?:Balance|Ba1ance|Bal\\w*|餘額|結餘|余额)\\s*[:：;]?\\s*(?:MOP)?\\s*[$S§]?\\s*' + NUM, 'i');
+  const DISC = new RegExp('(?:Discount|D1scount|優惠|折扣)\\s*[:：]?\\s*[-–]?\\s*(?:MOP)?\\s*[$S§]?\\s*' + NUM + '?', 'i');
+  const AMT = new RegExp('([+\\-−–—~])\\s*(?:MOP)?\\s*[$S§]?\\s*' + NUM);
+  const HEADER = /^(transactions?|all|filter|expenses?|income|total|records?|交易記錄|交易紀錄|全部|支出|收入|篩選|[<>‹›«»▾▼▸·•\-=_—~*#]+)$/i;
+  const MONTHLINE = /^(\d{4}\s*[-年\/.]\s*\d{1,2}\s*月?|[A-Za-z]{3,9}\s+\d{4})$/;
+
+  const cents = s => {
+    s = s.replace(/\s/g,'');
+    const m = s.match(/^(.*)[.,](\d{2})$/); if (!m) return null;
+    const whole = m[1].replace(/[.,]/g,''); if (!/^\d+$/.test(whole)) return null;
+    return parseInt(whole,10)*100 + parseInt(m[2],10);
+  };
+  const cleanJoin = s => s.replace(new RegExp(`([${CJK}])\\s+(?=[${CJK}])`,'g'),'$1').replace(/\s+/g,' ').trim();
+
+  // TSV (tesseract) → lines with position
+  function linesFromTSV(tsv){
+    const map = new Map(), all = [];
+    for (const raw of tsv.split('\n')){
+      const c = raw.split('\t'); if (c.length < 12 || c[0] !== '5') continue;
+      const text = c.slice(11).join('\t').trim(); if (!text) continue;
+      const key = c[2]+'.'+c[3]+'.'+c[4];
+      const w = {text, x:+c[6], y:+c[7], w:+c[8], h:+c[9], conf:+c[10]};
+      if (!map.has(key)) map.set(key, []); map.get(key).push(w); all.push(w);
+    }
+    // the text column starts where the dates start; anything wholly left of it is an icon or logo
+    const dx = all.filter(w => /^[12][0-9OoIl]{3}[-–.\/][0-9OoIl]{2}/.test(w.text)).map(w=>w.x).sort((a,b)=>a-b);
+    const hAll = all.map(w=>w.h).sort((a,b)=>a-b)[all.length>>1] || 10;
+    const colX = dx.length >= 2 && dx[dx.length-1] - dx[0] < hAll*2 ? dx[dx.length>>1] : null;
+    const out = [];
+    for (const ws0 of map.values()){
+      const ws = (colX == null ? ws0 : ws0.filter(w => w.x + w.w > colX - hAll*0.6)).sort((a,b)=>a.x-b.x);
+      if (!ws.length) continue;
+      // split a tesseract line into segments where there is a wide horizontal gap (left vs right column)
+      const hMed = ws.map(w=>w.h).sort((a,b)=>a-b)[ws.length>>1] || 10;
+      let seg = [ws[0]];
+      const push = s => { const y0 = Math.min(...s.map(w=>w.y)), y1 = Math.max(...s.map(w=>w.y+w.h));
+        out.push({text: cleanJoin(s.map(w=>w.text).join(' ')), x: s[0].x, y0, y1, yc:(y0+y1)/2, h: y1-y0}); };
+      for (let i=1;i<ws.length;i++){
+        const gap = ws[i].x - (ws[i-1].x + ws[i-1].w);
+        if (gap > hMed*3){ push(seg); seg = []; }
+        seg.push(ws[i]);
+      }
+      push(seg);
+    }
+    return out.sort((a,b)=>a.yc-b.yc || a.x-b.x);
+  }
+  // pasted text → lines, using the line number as position
+  function linesFromText(txt){
+    const raw = txt.split(/\r?\n/).map(s=>cleanJoin(s)).filter(Boolean), out = [];
+    for (let i=0;i<raw.length;i++){
+      // "Balance:" or "Discount" on its own line, with the number on the next line
+      if (/^(Balance|Ba1ance|餘額|結餘|余额|Discount|優惠|折扣)\s*[:：;]?$/i.test(raw[i]) && i+1 < raw.length && /^[-+]?\s*(MOP)?\s*[$S§]?\s*[\d.,\s]+$/.test(raw[i+1])){ out.push(raw[i]+' '+raw[i+1]); i++; }
+      else out.push(raw[i]);
+    }
+    return out.map((text,i)=>({text, x:0, yc:i, h:1}));
+  }
+
+  // classify every line into anchors (date-time) and pieces (payee / amount / balance / discount)
+  function classify(lines){
+    const anchors = [], P = {payee:[], amount:[], balance:[], discount:[], balWord:[], money:[]};
+    for (const ln of lines){
+      let t = ln.text;
+      const d = t.match(DT);
+      if (d){
+        const [Y,Mo,Da,H,Mi,S] = d.slice(1).map(v=>parseInt(fixDigits(v),10));
+        if (Mo>=1&&Mo<=12&&Da>=1&&Da<=31&&H<=23&&Mi<=59&&S<=59)
+          anchors.push({yc:ln.yc, h:ln.h, dt:`${Y}-${String(Mo).padStart(2,'0')}-${String(Da).padStart(2,'0')} ${String(H).padStart(2,'0')}:${String(Mi).padStart(2,'0')}:${String(S).padStart(2,'0')}`});
+        t = t.replace(d[0],' ');
+      }
+      const b = t.match(BAL); if (b){ const v = cents(b[1]); if (v!=null) P.balance.push({yc:ln.yc, v}); t = t.replace(b[0],' '); }
+      const di = t.match(DISC); if (di){ const v = di[1] ? cents(di[1]) : null; P.discount.push({yc:ln.yc, v:v||0}); t = t.replace(di[0],' '); }
+      const a = t.match(AMT); if (a){ const v = cents(a[2]); if (v!=null) P.amount.push({yc:ln.yc, v: /\+/.test(a[1]) ? v : -v}); t = t.replace(a[0],' '); }
+      if (/(Balance|Ba1ance|餘額|結餘|余额)/i.test(t)){ P.balWord.push({yc:ln.yc, x:ln.x}); t = t.replace(/(Balance|Ba1ance|餘額|結餘|余额)\s*[:：;]?/ig,' '); }
+      const mo = t.match(new RegExp('(?:MOP)?\\s*[$S§]\\s*' + NUM + '|(?<![\\d.,])' + NUM + '(?![\\d])'));
+      if (mo){ const v = cents(mo[1] || mo[2]); if (v!=null) P.money.push({yc:ln.yc, x:ln.x + (t.indexOf(mo[0]) > 0 ? 1 : 0), v}); t = t.replace(mo[0],' '); }
+      t = t.replace(/[|©®™•·>›»<‹«▸▾▼)(]+/g,' ').replace(/\s+/g,' ').trim();
+      if (t && /[A-Za-z㐀-鿿]/.test(t) && !HEADER.test(t) && !MONTHLINE.test(t) && !(t.length<=2 && !/[㐀-鿿]/.test(t) && t!=='OK'))
+        P.payee.push({yc:ln.yc, v:t});
+    }
+    return {anchors: anchors.sort((a,b)=>a.yc-b.yc), P};
+  }
+
+  // match each piece type to anchors using the typical offset seen on this screenshot
+  function assign(anchors, cands, tol){
+    if (!anchors.length || !cands.length) return anchors.map(()=>null);
+    const offs = cands.map(c => { const a = anchors.reduce((b,x)=>Math.abs(x.yc-c.yc) < Math.abs(b.yc-c.yc) ? x : b, anchors[0]); return c.yc - a.yc; }).sort((x,y)=>x-y);
+    const off = offs[offs.length>>1];
+    const used = new Set(), out = anchors.map(()=>null);
+    const pairs = [];
+    anchors.forEach((a,i)=>cands.forEach((c,j)=>{ const dist = Math.abs(c.yc - (a.yc + off)); if (dist <= tol) pairs.push([dist,i,j]); }));
+    pairs.sort((x,y)=>x[0]-y[0]);
+    for (const [,i,j] of pairs){ if (out[i] || used.has(j)) continue; out[i] = cands[j]; used.add(j); }
+    return out;
+  }
+
+  function rowsFrom(lines){
+    const {anchors, P} = classify(lines);
+    if (!anchors.length) return [];
+    const gaps = anchors.slice(1).map((a,i)=>a.yc - anchors[i].yc).sort((x,y)=>x-y);
+    const rowGap = gaps.length ? gaps[gaps.length>>1] : 4*(anchors[0].h||1);
+    const tol = Math.max(rowGap*0.42, (anchors[0].h||1)*0.8);
+    const pay = assign(anchors, P.payee, tol), amt = assign(anchors, P.amount, tol),
+          bal = assign(anchors, P.balance, tol), dis = assign(anchors, P.discount, tol);
+    return anchors.map((a,i)=>({datetime:a.dt, payee: pay[i]?.v || '', amount: amt[i] ? amt[i].v/100 : null,
+      balance: bal[i] ? bal[i].v/100 : null, discount: dis[i] ? dis[i].v/100 : 0}))
+      .filter(r => r.balance != null);   // a row needs its date-time and balance, like a cut-off row would not
+  }
+
+  // pasted text: rows may come out interleaved (payee, amount, date, balance…) or as separate column runs
+  // (all payees and dates, then all amounts and balances). Try both readings and keep the more complete one.
+  function rowsFromText(txt){
+    const lines = linesFromText(txt);
+    const {anchors, P} = classify(lines);
+    const pos = rowsFrom(lines);
+    const score = rs => rs.filter(r => r.payee && r.balance != null).length + rs.filter(r => r.amount != null).length * 0.01;
+    if (!anchors.length || P.balance.length !== anchors.length) return pos;
+    const pays = anchors.map((a,i) => { const lo = i ? anchors[i-1].yc : -Infinity; return [...P.payee].reverse().find(p => p.yc < a.yc && p.yc > lo) || P.payee.filter(p=>p.yc>a.yc)[0]; });
+    const zip = anchors.map((a,i) => { const same = pos.find(r => r.datetime === a.dt);
+      return {datetime:a.dt, payee:pays[i]?.v || '', amount: P.amount.length === anchors.length ? P.amount[i].v/100 : null,
+        balance:P.balance[i].v/100, discount: same ? same.discount : 0}; });
+    return score(zip) > score(pos) ? zip : pos;
+  }
+
+  // nudge a misread payee to one already in the ledger ("rand Mart Departmen" → "Grand Mart Departmen")
+  function lev(a,b){ const m=a.length,n=b.length; if(!m) return n; if(!n) return m; let p=[...Array(n+1).keys()];
+    for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
+  // Only fixes small slips on names already in the ledger. Never changes digits (BUS-33 stays BUS-33),
+  // completes a name MPay cut short with "...", and otherwise needs at most 1–2 wrong characters.
+  function snapPayee(raw, known){
+    const norm = s => s.toLowerCase().replace(/[\s'’]/g,'');
+    const digits = s => (s.match(/\d+/g) || []).join(',');
+    const cut = /(\.{2,}|…)\s*$/.test(raw);
+    const r = norm(raw.replace(/(\.{2,}|…)\s*$/,'')); if (!r) return raw;
+    if (known.some(k => norm(k) === r)) return known.find(k => norm(k) === r);
+    if ((cut && r.length >= 6) || r.length >= 12){ const hit = known.filter(k => norm(k).startsWith(r)); if (hit.length === 1) return hit[0]; }
+    let best = null, bd = Infinity;
+    for (const k of known){ if (digits(k) !== digits(raw)) continue; const d = lev(r, norm(k)); if (d < bd){ bd = d; best = k; } }
+    const allow = r.length >= 14 ? 2 : r.length >= 5 ? 1 : 0;
+    return best && bd <= allow ? best : raw.replace(/\s*(\.{2,}|…)$/,'');
+  }
+
+  // screenshots: each transaction is a visual group of lines separated by a bigger gap; one date-time per group
+  function rowsFromImage(lines){
+    const L = lines.slice().sort((a,b)=>a.y0-b.y0);
+    if (L.length < 2) return rowsFrom(lines);
+    const gaps = []; let bottom = L[0].y1;
+    for (let i=1;i<L.length;i++){ gaps.push(L[i].y0 - bottom); bottom = Math.max(bottom, L[i].y1); }
+    const nDt = L.filter(l => DT.test(l.text)).length;
+    const pos = gaps.filter(g=>g>0).sort((a,b)=>a-b);
+    let cut = Infinity;
+    if (nDt > 1 && pos.length >= nDt-1){
+      const big = pos.slice(pos.length-(nDt-1)), small = pos.slice(0, pos.length-(nDt-1));
+      cut = small.length ? (small[small.length-1] + big[0]) / 2 : big[0]*0.75;
+    }
+    const groups = []; let cur = [L[0]]; bottom = L[0].y1;
+    for (let i=1;i<L.length;i++){ if (L[i].y0 - bottom >= cut){ groups.push(cur); cur = []; } cur.push(L[i]); bottom = Math.max(bottom, L[i].y1); }
+    groups.push(cur);
+    const rows = [];
+    for (const g of groups){
+      const {anchors, P} = classify(g);
+      if (anchors.length !== 1){ if (anchors.length > 1) rows.push(...rowsFrom(g)); continue; }
+      if (!P.balance.length && P.balWord.length && P.money.length){
+        const bw = P.balWord[0]; const right = P.money.filter(m=>m.x >= bw.x - 4); const pool = right.length ? right : P.money;
+        const m = pool.slice().sort((a,b)=>(Math.abs(a.yc-bw.yc)+Math.abs(a.x-bw.x)*.5)-(Math.abs(b.yc-bw.yc)+Math.abs(b.x-bw.x)*.5))[0];
+        P.balance.push(m); P.money = P.money.filter(x=>x!==m);
+      }
+      if (!P.balance.length) continue;
+      if (!P.amount.length && P.money.length) P.amount.push({yc:P.money[0].yc, v:-P.money[0].v, unsigned:true});
+      const ay = P.amount.length ? P.amount[0].yc : null;
+      const pay = P.payee.slice().sort((a,b) => ay != null ? Math.abs(a.yc-ay) - Math.abs(b.yc-ay) || b.v.length - a.v.length : b.v.length - a.v.length)[0];
+      rows.push({datetime: anchors[0].dt, payee: pay ? pay.v : '', amount: P.amount.length ? P.amount[0].v/100 : null,
+        balance: P.balance[0].v/100, discount: P.discount.length ? (P.discount[0].v||0)/100 : 0});
+    }
+    return rows.length >= Math.ceil(nDt*0.6) ? rows : rowsFrom(lines);
+  }
+
+  return {linesFromTSV, rowsFromTSV: tsv => rowsFromImage(linesFromTSV(tsv)), rowsFromText, snapPayee, cents};
+})();
+if (typeof module !== 'undefined') module.exports = MP;
+
+// ---------- TRENDS ----------
+const SERIES = [
+  {k:'spend', label:'Spent',    color:'var(--c-spend)'},
+  {k:'inc',   label:'Money in', color:'var(--c-in)'},
+  {k:'games', label:'Games',    color:'var(--c-games)'}
+];
+const UNIT = {day:{n:'day',days:1}, week:{n:'week',days:7}, month:{n:'month',days:30.44}};
+const val = (p,k) => k==='spend' ? p.spend : k==='inc' ? p.income : p.games;
+const compact = v => v >= 1000 ? (v/1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'K' : String(Math.round(v));
+function niceTicks(max){ // max in MOP
+  if (!(max > 0)) max = 100;
+  const raw = max/4, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(x=>x*p).find(x=>x>=raw*0.999);
+  const top = Math.ceil(max/step - 1e-9)*step; const out=[];
+  for (let v=0; v<=top+1e-9; v+=step) out.push(Math.round(v*100)/100);
+  return out;
+}
+
+// split the ledger into days / weeks / months, with totals for each
+function buildPeriods(mode){
+  const t0 = today0(); const todayStr = ymd(t0);
+  const firstStr = rows[0].dt.slice(0,10), lastStr = rows[rows.length-1].dt.slice(0,10);
+  const first = dObj(firstStr); const out = [];
+  if (mode === 'day'){
+    for (let i=29;i>=0;i--){ const s = addDays(t0,-i); out.push({from:ymd(s), to:ymd(addDays(s,1)), short:`${s.getDate()} ${MON[s.getMonth()]}`, long:`${DOWL[s.getDay()]} ${s.getDate()} ${MON[s.getMonth()]}`}); }
+  } else if (mode === 'week'){
+    for (let s = mondayOf(first); s <= t0; s = addDays(s,7)){ out.push({from:ymd(s), to:ymd(addDays(s,7)), short:`${s.getDate()} ${MON[s.getMonth()]}`, long:`Week of ${s.getDate()} ${MON[s.getMonth()]}`}); }
+  } else {
+    for (let s = new Date(first.getFullYear(), first.getMonth(), 1); s <= t0; s = new Date(s.getFullYear(), s.getMonth()+1, 1)){
+      out.push({from:ymd(s), to:ymd(new Date(s.getFullYear(), s.getMonth()+1, 1)), short:MON[s.getMonth()], long:`${MONL[s.getMonth()]} ${s.getFullYear()}`});
+    }
+  }
+  const lastPlus = ymd(addDays(dObj(lastStr),1));
+  for (const p of out){
+    const rs = rows.filter(r => r.dt >= p.from && r.dt < p.to);
+    p.rows = rs; p.sp = spendIn(rs); p.inc = incomeIn(rs);
+    p.spend = Math.max(0, sum(p.sp)); p.income = Math.max(0, sum(p.inc)); p.games = Math.max(0, p.sp.games||0);
+    p.before = p.to <= firstStr;
+    p.noData = p.from > lastStr;                                   // nothing added for this stretch yet
+    p.ongoing = p.from <= todayStr && p.to > todayStr;
+    p.startsLate = p.from < firstStr;
+    // days this period actually has data for (first period starts late, latest stops at the last added row)
+    const a = p.from < firstStr ? firstStr : p.from, b = p.to > lastPlus ? lastPlus : p.to;
+    p.covered = Math.max(0, Math.round((dObj(b) - dObj(a))/864e5));
+  }
+  return out.filter(p => !p.before);
+}
+
+let tActive = null, tPeriods = [], tChart = null;
+function renderTrends(){
+  if (!rows.length){
+    const empty = '<p class="small muted">No transactions yet. Add your MPay screenshots or restore a backup, and your graphs appear here.</p>';
+    $('#readout').innerHTML = empty; ['#lineChart','#legend','#chartNote','#tiles','#balChart','#balReadout','#balRange','#trend','#numTable'].forEach(q => $(q).innerHTML = '');
+    $('#detail').innerHTML = '<p class="small muted">Nothing to show yet.</p>'; return;
+  }
+  const mode = state.ui.mode, show = state.ui.show;
+  const P = tPeriods = buildPeriods(mode);
+  const lastIdx = P.map(p=>!p.noData).lastIndexOf(true);
+  if (tActive == null || tActive > lastIdx || tActive < 0) tActive = lastIdx;
+  $('#modeSeg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+  $('#legend').innerHTML = SERIES.map(s => `<button data-series="${s.k}" aria-pressed="${!!show[s.k]}"><i class="key" style="background:${s.color}"></i>${s.label}</button>`).join('');
+
+  const budget = show.spend ? (mode==='week' ? state.weekly : mode==='day' ? Math.round(state.weekly/7) : 0) : 0;
+  tChart = lineChart($('#lineChart'), P, {budget, budgetLabel: mode==='week' ? 'Weekly budget' : 'Daily share of budget', onActive: setActive, active: tActive});
+
+  const lastStr = rows[rows.length-1].dt.slice(0,10);
+  const rangeTxt = mode==='day' ? 'the last 30 days' : `${dayLabel(rows[0].dt)} to now`;
+  $('#chartNote').textContent = `Showing ${rangeTxt}. Drag across the chart to see each ${UNIT[mode].n}.` + (lastStr < ymd(today0()) ? ` Transactions after ${dayLabel(lastStr)} aren’t added yet.` : '');
+
+  // averages over what's shown
+  const D = P.filter(p=>!p.noData);
+  const days = D.reduce((a,p)=>a+p.covered,0) || 1;
+  const tS = D.reduce((a,p)=>a+p.spend,0), tI = D.reduce((a,p)=>a+p.income,0), net = tI - tS;
+  const per = UNIT[mode].days, u = UNIT[mode].n;
+  $('#tiles').innerHTML = `
+    <div class="tile"><span class="lbl">Spent, average ${u}</span><span class="v">${money0(tS/days*per)}</span></div>
+    <div class="tile"><span class="lbl">Money in, average ${u}</span><span class="v">${money0(tI/days*per)}</span></div>
+    <div class="tile"><span class="lbl">In minus out, ${mode==='day'?'30 days':'all time'}</span><span class="v ${net>=0?'pos':'neg'}">${net>=0?'+':'−'}${money0(Math.abs(net))}</span></div>`;
+
+  setActive(tActive, true);
+  renderBalance(P);
+  renderGamesShare();
+
+  $('#numTable').innerHTML = `<thead><tr><th>${u[0].toUpperCase()+u.slice(1)}</th><th>Spent</th><th>In</th><th>In − out</th></tr></thead><tbody>` +
+    D.slice().reverse().map(p => { const n = p.income - p.spend;
+      return `<tr><td>${p.long}${p.ongoing?' <span class="muted">so far</span>':''}</td><td class="num">${money(p.spend)}</td><td class="num">${money(p.income)}</td><td class="num ${n>=0?'pos':'neg'}">${n>=0?'+':'−'}${money(Math.abs(n))}</td></tr>`; }).join('') + `</tbody>`;
+}
+
+function setActive(i, quiet){
+  const P = tPeriods; if (!P.length) return;
+  i = Math.max(0, Math.min(P.length-1, i)); tActive = i;
+  const p = P[i], show = state.ui.show, mode = state.ui.mode;
+  tChart?.mark(i);
+  const tag = p.noData ? 'not added yet' : p.ongoing ? 'so far' : p.startsLate ? `from ${dayLabel(rows[0].dt)}` : '';
+  $('#readout').innerHTML = `<div class="ro-head"><b>${p.long}</b>${tag?`<span class="ro-tag">${tag}</span>`:''}</div>
+    <div class="ro-vals">${SERIES.filter(s=>show[s.k]).map(s => `<div class="ro"><span class="ro-v num">${p.noData?'—':money(val(p,s.k))}</span><span class="ro-l"><i class="key" style="background:${s.color}"></i>${s.label}</span></div>`).join('') || '<span class="small muted">Turn on a line below to see numbers.</span>'}</div>`;
+  if (quiet !== 'skipDetail') renderDetail(p, mode);
+}
+
+function renderDetail(p, mode){
+  const isNow = p.ongoing;
+  $('#detailTitle').textContent = isNow ? `This ${UNIT[mode].n}${mode==='day'?'':' so far'}` : p.long;
+  if (p.noData){ $('#detail').innerHTML = `<p class="small muted">Nothing added for ${p.long} yet. Add your MPay screenshots to fill this in.</p><button class="btn ghost" data-go="add">Add screenshots</button>`; return; }
+  const n = p.income - p.spend;
+  const cats = Object.entries(p.sp).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const top = cats.slice(0,5), max = Math.max(1, ...top.map(c=>c[1]));
+  $('#detail').innerHTML = `<div class="trio">
+      <div><span class="lbl">Spent</span><span class="v num">${money(p.spend)}</span></div>
+      <div><span class="lbl">Money in</span><span class="v num">${money(p.income)}</span></div>
+      <div><span class="lbl">In − out</span><span class="v num" style="color:${n>=0?'var(--accent)':'var(--over)'}">${n>=0?'+':'−'}${money(Math.abs(n))}</span></div></div>
+    ${top.length ? `<div class="cats">${top.map(([c,v]) => `<div class="cat" style="cursor:default">${icon(c)}<span>${LABEL[c]}</span><span class="num">${money(v)}<span class="pct">${p.spend>0?Math.round(v/p.spend*100):0}%</span></span><span class="bar"><span style="width:${v/max*100}%;background:${c==='games'?'var(--c-games)':'var(--c-spend)'}"></span></span></div>`).join('')}</div>` : '<p class="small muted">No spending here.</p>'}
+    ${cats.length > 5 ? `<p class="small muted">Plus ${cats.length-5} smaller ${cats.length-5>1?'categories':'category'}.</p>` : ''}
+    <button class="btn ghost" data-range="${p.from}|${p.to}|${esc(p.long)}">See these ${p.rows.length} transactions</button>`;
+}
+
+// line chart: one y-axis, MOP; crosshair snaps to the nearest period
+function lineChart(host, P, opt){
+  const W = Math.max(280, Math.round(host.clientWidth || 320)), H = 214;
+  const m = {l:38, r:14, t:16, b:26}, pw = W-m.l-m.r, ph = H-m.t-m.b, n = P.length;
+  const show = state.ui.show, vis = SERIES.filter(s=>show[s.k]);
+  const X = i => m.l + (n===1 ? pw/2 : i*pw/(n-1));
+  let maxV = 0; for (const p of P) if (!p.noData) for (const s of vis) maxV = Math.max(maxV, val(p,s.k));
+  if (opt.budget) maxV = Math.max(maxV, opt.budget);
+  const ticks = niceTicks(maxV/100), top = ticks[ticks.length-1]*100 || 1;
+  const Y = v => m.t + ph - (v/top)*ph;
+  const last = P.map(p=>!p.noData).lastIndexOf(true);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="Line chart of spending and money in by ${UNIT[state.ui.mode].n}. Use left and right arrow keys to move between ${UNIT[state.ui.mode].n}s.">`;
+  for (const t of ticks){ const y = Y(t*100); s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" style="stroke:${t===0?'var(--axis)':'var(--grid)'}" stroke-width="1"/><text class="ax" x="${m.l-7}" y="${y+3.5}" text-anchor="end">${compact(t)}</text>`; }
+  // stretch with nothing added yet
+  const nd = P.findIndex(p=>p.noData);
+  if (nd > 0){ const x0 = (X(nd-1)+X(nd))/2; s += `<rect x="${x0}" y="${m.t}" width="${W-m.r-x0}" height="${ph}" rx="6" style="fill:var(--sunk)"/><text class="ax-lbl" x="${(x0+W-m.r)/2}" y="${m.t+14}" text-anchor="middle">${W-m.r-x0>64?'Not added yet':''}</text>`; }
+  if (opt.budget){ const y = Y(opt.budget); s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" style="stroke:var(--faint)" stroke-width="1.2" stroke-dasharray="4 4"/><text class="ax-lbl" x="${m.l+4}" y="${y-6}">${opt.budgetLabel} ${money0(opt.budget)}</text>`; }
+  // x labels, anchored on the latest period
+  const maxL = Math.max(2, Math.floor(pw/56)), step = Math.ceil(n/maxL);
+  for (let i=n-1;i>=0;i-=step){ const x = X(i); const a = x < m.l+18 ? 'start' : x > W-m.r-18 ? 'end' : 'middle'; s += `<text class="ax" x="${x}" y="${H-7}" text-anchor="${a}">${P[i].short}</text>`; }
+  // wash under spending, then the lines
+  const pts = k => P.slice(0,last+1).map((p,i)=>[X(i), Y(val(p,k))]);
+  if (show.spend && last >= 0){ const q = pts('spend'); s += `<path d="M${q.map(p=>p.join(',')).join('L')}L${q[q.length-1][0]},${Y(0)}L${q[0][0]},${Y(0)}Z" style="fill:var(--c-spend);fill-opacity:.09"/>`; }
+  for (const k of ['inc','games','spend']){ if (!show[k] || last < 0) continue; const sr = SERIES.find(x=>x.k===k);
+    const q = pts(k); s += `<path d="M${q.map(p=>p.join(',')).join('L')}" fill="none" style="stroke:${sr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const e = q[q.length-1], open = P[last].ongoing;
+    s += `<circle cx="${e[0]}" cy="${e[1]}" r="4" style="fill:${open?'var(--surface)':sr.color};stroke:${open?sr.color:'var(--surface)'}" stroke-width="2"/>`; }
+  // crosshair layer
+  s += `<g id="xh" pointer-events="none"><line y1="${m.t}" y2="${m.t+ph}" style="stroke:var(--muted)" stroke-width="1"/>`;
+  for (const sr of vis) s += `<circle data-k="${sr.k}" r="5" style="fill:${sr.color};stroke:var(--surface)" stroke-width="2"/>`;
+  s += `</g><rect id="hit" x="${m.l-10}" y="0" width="${pw+20}" height="${H}" fill="transparent"/></svg>`;
+  host.innerHTML = s;
+  const svg = host.querySelector('svg'), xh = svg.querySelector('#xh'), hit = svg.querySelector('#hit');
+  const mark = i => {
+    const x = X(i), p = P[i];
+    const ln = xh.querySelector('line'); ln.setAttribute('x1', x); ln.setAttribute('x2', x);
+    xh.querySelectorAll('circle').forEach(c => { const v = val(p, c.dataset.k); c.setAttribute('cx', x); c.setAttribute('cy', Y(v)); c.style.display = p.noData ? 'none' : ''; });
+  };
+  const pick = e => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (W / r.width);
+    let i = n===1 ? 0 : Math.round((x - m.l) / (pw/(n-1))); i = Math.max(0, Math.min(Math.max(0,last), i)); if (i !== tActive) opt.onActive(i); };
+  hit.addEventListener('pointerdown', e => { try { hit.setPointerCapture(e.pointerId); } catch(_){} pick(e); });
+  hit.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pick(e); });
+  svg.addEventListener('keydown', e => { if (e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); opt.onActive(Math.max(0, Math.min(last, tActive + (e.key==='ArrowLeft'?-1:1)))); } });
+  return {mark};
+}
+
+// MPay balance at the end of each day, drawn as steps (it holds until the next day with a transaction)
+function renderBalance(P){
+  const from = P[0].from, to = P[P.length-1].to;
+  const byDay = new Map(); for (const r of rows) if (r.dt >= from && r.dt < to) byDay.set(r.dt.slice(0,10), r);
+  const D = [...byDay].map(([d,r]) => ({d, t:dObj(d).getTime(), bal:r.bal}));
+  const host = $('#balChart');
+  if (D.length < 2){ host.innerHTML = '<p class="small muted">Not enough transactions in this range.</p>'; $('#balReadout').innerHTML=''; return; }
+  const W = Math.max(280, Math.round(host.clientWidth || 320)), H = 150, m = {l:38, r:14, t:14, b:24}, pw = W-m.l-m.r, ph = H-m.t-m.b;
+  const t0 = D[0].t, t1 = D[D.length-1].t + 864e5;
+  const X = v => m.l + (v - t0)/(t1 - t0)*pw;
+  const ticks = niceTicks(Math.max(...D.map(r=>r.bal))/100), top = ticks[ticks.length-1]*100;
+  const Y = v => m.t + ph - v/top*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="MPay balance at the end of each day">`;
+  for (const k of ticks){ const y = Y(k*100); s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" style="stroke:${k===0?'var(--axis)':'var(--grid)'}" stroke-width="1"/><text class="ax" x="${m.l-7}" y="${y+3.5}" text-anchor="end">${compact(k)}</text>`; }
+  // x labels: month starts, or Mondays when showing 30 days
+  const d0 = new Date(t0), dayMode = state.ui.mode==='day'; let lastX = -99;
+  for (let d = dayMode ? addDays(mondayOf(d0),7) : new Date(d0.getFullYear(), d0.getMonth()+1, 1); d.getTime() < t1; d = dayMode ? addDays(d,7) : new Date(d.getFullYear(), d.getMonth()+1, 1)){
+    const x = X(d.getTime()); if (x - lastX < 44 || x > W-m.r-10) continue; lastX = x;
+    s += `<line x1="${x}" x2="${x}" y1="${m.t+ph}" y2="${m.t+ph+4}" style="stroke:var(--axis)"/><text class="ax" x="${x}" y="${H-6}" text-anchor="middle">${dayMode?d.getDate()+' ':''}${MON[d.getMonth()]}</text>`;
+  }
+  let path = `M${X(t0)},${Y(D[0].bal)}`;
+  for (let i=1;i<D.length;i++) path += `H${X(D[i].t)}V${Y(D[i].bal)}`;
+  path += `H${X(t1)}`;
+  s += `<path d="${path}V${Y(0)}H${X(t0)}Z" style="fill:var(--accent);fill-opacity:.09"/><path d="${path}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+  const lo = D.reduce((a,r)=>r.bal<a.bal?r:a, D[0]), lx = X(lo.t + 432e5), ly = Y(lo.bal);
+  s += `<circle cx="${lx}" cy="${ly}" r="4" style="fill:var(--over);stroke:var(--surface)" stroke-width="2"/><text class="ax-lbl" x="${lx}" y="${ly-10}" text-anchor="${lx>W-80?'end':lx<m.l+50?'start':'middle'}">Lowest ${money(lo.bal)}</text>`;
+  const L = D[D.length-1]; s += `<circle cx="${X(t1)}" cy="${Y(L.bal)}" r="4" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2"/>`;
+  s += `<g id="bxh" pointer-events="none" style="display:none"><line y1="${m.t}" y2="${m.t+ph}" style="stroke:var(--muted)" stroke-width="1"/><circle r="5" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2"/></g>`;
+  s += `<rect id="bhit" x="${m.l-10}" y="0" width="${pw+20}" height="${H}" fill="transparent"/></svg>`;
+  host.innerHTML = s;
+  const svg = host.querySelector('svg'), g = svg.querySelector('#bxh'), hit = svg.querySelector('#bhit');
+  const show = r => $('#balReadout').innerHTML = `<div class="ro-head"><b>${dayLabel(r.d)}</b><span>end of day</span></div><div class="ro-vals"><div class="ro"><span class="ro-v num">MOP ${money(r.bal)}</span></div></div>`;
+  show(L);
+  const pick = e => { const rc = svg.getBoundingClientRect(); const x = (e.clientX - rc.left)*(W/rc.width);
+    const tt = t0 + (x - m.l)/pw*(t1 - t0); let r = D[0]; for (const b of D){ if (b.t <= tt) r = b; else break; }
+    const cx = X(r.t + 432e5); g.style.display = ''; g.querySelector('line').setAttribute('x1', cx); g.querySelector('line').setAttribute('x2', cx);
+    const c = g.querySelector('circle'); c.setAttribute('cx', cx); c.setAttribute('cy', Y(r.bal)); show(r); };
+  hit.addEventListener('pointerdown', e => { try { hit.setPointerCapture(e.pointerId); } catch(_){} pick(e); });
+  hit.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pick(e); });
+  hit.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse'){ g.style.display='none'; show(L); } });
+  $('#balRange').textContent = `lowest on ${dayLabel(lo.d)}`;
+}
+
+function renderGamesShare(){
+  const months = [...new Set(rows.map(r=>r.dt.slice(0,7)))];
+  const per = months.map(m => { const s = spendIn(rows.filter(r=>r.dt.startsWith(m))); return {m, g:Math.max(0,s.games||0), t:Math.max(0,sum(s))}; });
+  const tmax = Math.max(1, ...per.map(p=>p.t));
+  const firstDt = rows[0].dt, lastDt = rows[rows.length-1].dt;
+  $('#trend').innerHTML = per.map(p => {
+    const part = p.m===firstDt.slice(0,7) ? `from ${+firstDt.slice(8,10)}` : p.m===lastDt.slice(0,7) ? `to ${+lastDt.slice(8,10)}` : '';
+    const gp = p.t ? Math.round(p.g/p.t*100) : 0;
+    return `<div class="t"><span>${MON[+p.m.slice(5,7)-1]} <span class="muted small">${part}</span></span>
+      <div class="bar"><span style="width:${p.g/tmax*100}%;background:var(--c-games)" title="Games ${money(p.g)}"></span><span style="width:${(p.t-p.g)/tmax*100}%;background:var(--c-spend)" title="Everything else ${money(p.t-p.g)}"></span></div>
+      <span class="num" style="text-align:right">${money0(p.t)}<span class="muted small" style="display:block;line-height:1.2">${gp}% games</span></span></div>`;
+  }).join('');
+}
+
+// small weekly sparkline on Home
+function renderSpark(){
+  if (!rows.length){ $('#sparkAvg').textContent = '—'; $('#sparkNow').innerHTML = ''; $('#spark').innerHTML = '<span class="small muted">Your weekly spending shows here once you add transactions.</span>'; return; }
+  const host = $('#spark'); const P = buildPeriods('week').slice(-8);
+  const full = P.filter(p => !p.ongoing && !p.startsLate && !p.noData);
+  const avg = full.length ? full.reduce((a,p)=>a+p.spend,0)/full.length : 0;
+  const cur = P[P.length-1];
+  $('#sparkAvg').textContent = `MOP ${money0(avg)}`;
+  $('#sparkNow').innerHTML = cur.ongoing ? `This week so far<br><span class="num" style="color:var(--ink);font-weight:600">${money(cur.spend)}</span>` : '';
+  const W = Math.max(200, Math.round(host.clientWidth || 300)), H = 56, n = P.length;
+  const top = Math.max(1, state.weekly, ...P.map(p=>p.spend));
+  const X = i => 4 + i*(W-8)/Math.max(1,n-1), Y = v => H-4 - v/top*(H-12);
+  const q = P.map((p,i)=>[X(i), Y(p.spend)]);
+  const by = Y(state.weekly);
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+    <line x1="0" x2="${W}" y1="${by}" y2="${by}" style="stroke:var(--faint)" stroke-dasharray="3 4" stroke-width="1"/>
+    <path d="M${q.map(p=>p.join(',')).join('L')}L${q[n-1][0]},${H}L${q[0][0]},${H}Z" style="fill:var(--c-spend);fill-opacity:.1"/>
+    <path d="M${q.map(p=>p.join(',')).join('L')}" fill="none" style="stroke:var(--c-spend)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${q[n-1][0]}" cy="${q[n-1][1]}" r="4" style="fill:${cur.ongoing?'var(--surface)':'var(--c-spend)'};stroke:${cur.ongoing?'var(--c-spend)':'var(--surface)'}" stroke-width="2"/></svg>`;
+}
+
+// ---------- ADD ----------
+let sampleFn = null, imgLimits = null, dl = null, readCtl = null, pending = [], pendingMeta = {dup:0, bad:0, src:''};
+let busy = false, ocrStop = false;
+const PROMPT = `These images are screenshots of the "Transactions" list in MPay, a Macau e-wallet app.
+Extract every transaction row whose date-time AND "Balance:" value are both fully visible. Skip any row cut off at the top or bottom of a screenshot.
+For each row give:
+- datetime: exactly as shown, format YYYY-MM-DD HH:MM:SS
+- payee: exactly as shown (keep Chinese characters, keep the "Transfer " prefix, keep "..." if it is shortened)
+- amount: number, negative when it shows "- $", positive when it shows "+ $"
+- balance: number from "Balance: $"
+- discount: number from a red "Discount" tag if present, else 0
+Reply with only a JSON array, for example:
+[{"datetime":"2026-01-31 18:05:09","payee":"Grand Mart Departmen","amount":-12.50,"balance":340.20,"discount":0}]`;
+
+// Claude is optional now: it only adds a second "Read with Claude" button when the page runs inside Claude
+function setupClaude(){
+  if (!window.claude || !window.claude.use){ renderAddAvail(); return; }
+  claude.use('sample').then(async s => { sampleFn = s; if (s){ const l = await s.limits().catch(()=>null); imgLimits = l?.images || null; } renderAddAvail(); }).catch(()=>renderAddAvail());
+  claude.use('downloads').then(d => { dl = d; renderSettings(); }).catch(()=>{});
+}
+function renderAddAvail(){ $('#readBtn').hidden = !(sampleFn && imgLimits); updateShotInfo(); }
+function updateShotInfo(){
+  const n = $('#shots').files.length;
+  $('#shotInfo').textContent = n ? `${n} screenshot${n>1?'s':''} picked` : 'No screenshots picked';
+  $('#ocrBtn').disabled = !n || busy;
+  $('#readBtn').disabled = !n || busy || !sampleFn || !imgLimits;
+  $('#pasteBtn').disabled = busy || !$('#pasteBox').value.trim();
+}
+function setBusy(b){ busy = b; $('#stopBtn').hidden = !b; updateShotInfo(); }
+function setProg(p){ const el = $('#readProg'); if (p == null){ el.hidden = true; return; } el.hidden = false; el.firstElementChild.style.width = Math.round(Math.min(1,p)*100) + '%'; }
+$('#shots').onchange = updateShotInfo;
+$('#pasteBox').oninput = updateShotInfo;
+$('#stopBtn').onclick = () => { readCtl?.abort(); ocrStop = true; $('#readStatus').textContent = 'Stopping after this screenshot…'; };
+
+// ----- on-phone reader (Tesseract, English + Traditional Chinese). The reading models ship with this page. -----
+const TESS_JS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+const OCR = {worker:null, loading:null, log:null};
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej({code:'script'}); document.head.appendChild(s); }); }
+function withTimeout(p, ms, code){ return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({code}), ms))]); }
+// The reader looks in its own browser cache before downloading a model, so the page puts the models it ships
+// (tessdata/*.gz.txt next to this page) into that cache first. Nothing is fetched from anywhere else.
+function idbOpen(){ return new Promise((res, rej) => { const r = indexedDB.open('keyval-store'); r.onupgradeneeded = () => r.result.createObjectStore('keyval'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function idbReq(db, mode, fn){ return new Promise((res, rej) => { const tx = db.transaction('keyval', mode); const q = fn(tx.objectStore('keyval')); tx.oncomplete = () => res(q.result); tx.onerror = () => rej(tx.error); }); }
+async function seedModels(onPart){
+  const db = await idbOpen(); const langs = ['eng','chi_tra'];
+  try {
+    for (let i=0;i<langs.length;i++){
+      const key = `./${langs[i]}.traineddata`;
+      if (await idbReq(db, 'readonly', st => st.get(key))) { onPart((i+1)/langs.length); continue; }
+      const resp = await fetch(`tessdata/${langs[i]}.traineddata.gz.txt`); if (!resp.ok) throw {code:'model'};
+      const b64 = (await resp.text()).trim(); const bin = new Uint8Array(b64.length*3/4 - (b64.endsWith('==')?2:b64.endsWith('=')?1:0));
+      const raw = atob(b64); for (let j=0;j<raw.length;j++) bin[j] = raw.charCodeAt(j);
+      await idbReq(db, 'readwrite', st => st.put(bin, key));
+      onPart((i+1)/langs.length);
+    }
+  } finally { db.close(); }
+}
+function getOcr(){
+  if (OCR.worker) return Promise.resolve(OCR.worker);
+  if (!OCR.loading){
+    OCR.loading = (async () => {
+      await seedModels(p => OCR.log && OCR.log({status:'downloading models', progress:p*0.6}));
+      if (!window.Tesseract) await loadScript(TESS_JS);
+      const langPath = new URL('tessdata', document.baseURI).href;
+      return Tesseract.createWorker('eng+chi_tra', 1, {langPath, gzip:false, logger: m => OCR.log && OCR.log(m.status === 'recognizing text' ? m : {status:m.status, progress:0.6 + (m.progress||0)*0.4})});
+    })();
+    OCR.loading.then(w => { OCR.worker = w; }, () => { OCR.loading = null; });
+  }
+  return withTimeout(OCR.loading, 150000, 'timeout');
+}
+// Prepare a screenshot for the reader: enlarge 1.5×, flip dark mode to dark-on-light, then turn it into
+// pure black text on white. MPay's dates are very light grey, so this step is what makes them readable.
+async function prepImage(file){
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1.5, 1900 / bmp.width);
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width*scale); c.height = Math.round(bmp.height*scale);
+  const g = c.getContext('2d', {willReadFrequently:true}); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'medium';
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height), px = d.data, n = px.length/4, L = new Uint8Array(n);
+  let sum = 0, cnt = 0;
+  for (let i=0,j=0;j<n;i+=4,j++) L[j] = Math.round(px[i]*.299 + px[i+1]*.587 + px[i+2]*.114);
+  for (let j=0;j<n;j+=16){ sum += L[j]; cnt++; }
+  const dark = sum/cnt < 110, hist = new Uint32Array(32);
+  for (let j=0;j<n;j+=4) hist[(dark ? 255-L[j] : L[j]) >> 3]++;
+  let m = 0; for (let k=1;k<32;k++) if (hist[k] > hist[m]) m = k;
+  const thr = Math.max(120, Math.min(232, m*8 + 4 - 28));   // just below the background shade
+  for (let i=0,j=0;j<n;i+=4,j++){ const v = dark ? 255-L[j] : L[j]; px[i] = px[i+1] = px[i+2] = v < thr ? 0 : 255; px[i+3] = 255; }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+$('#ocrBtn').onclick = async () => {
+  const files = [...$('#shots').files]; if (!files.length) return;
+  ocrStop = false; setBusy(true); $('#previewBox').hidden = true;
+  const found = []; let stage = 'start';
+  try {
+    if (!OCR.worker){
+      $('#readStatus').textContent = 'Getting the reader ready… the first time takes a little while.';
+      OCR.log = m => { if (typeof m.progress === 'number') setProg(m.progress); };
+    }
+    const w = await getOcr(); stage = 'read';
+    for (let i=0;i<files.length && !ocrStop;i++){
+      $('#readStatus').textContent = `Reading screenshot ${i+1} of ${files.length}…`;
+      OCR.log = m => { if (m.status === 'recognizing text') setProg((i + (m.progress||0)) / files.length); };
+      setProg(i / files.length);
+      const img = await prepImage(files[i]);
+      const { data } = await w.recognize(img, {}, {text:false, blocks:false, hocr:false, tsv:true});
+      found.push(...MP.rowsFromTSV(data.tsv || ''));
+    }
+    $('#readStatus').textContent = ocrStop ? 'Stopped. Showing what was read so far.' : '';
+    showPreview(found, 'phone');
+  } catch(e){
+    $('#readStatus').textContent = stage === 'start'
+      ? `${e?.code === 'timeout' ? 'The reader took too long to start.' : 'The phone reader couldn’t start here.'} Try “Or paste the text” below${sampleFn && imgLimits ? ', or Read with Claude' : ''}.`
+      : 'One screenshot couldn’t be read. Pick PNG or JPEG screenshots and try again.';
+  } finally { OCR.log = null; setProg(null); setBusy(false); }
+};
+
+// ----- pasted Live Text -----
+$('#pasteBtn').onclick = () => {
+  const found = MP.rowsFromText($('#pasteBox').value);
+  if (!found.length){ $('#pasteStatus').textContent = 'No transactions found in that text. It needs the date and time and the “Balance” line of each transaction.'; return; }
+  $('#pasteStatus').textContent = '';
+  showPreview(found, 'paste');
+};
+
+// ----- Claude (only when available) -----
+// re-encode a screenshot as JPEG when it is too big or an unusual type, so Claude accepts it
+async function fitImage(f){
+  try {
+    if (!imgLimits || (f.size <= imgLimits.maxInputBytes && imgLimits.mediaTypes.includes(f.type))) return f;
+    const bmp = await createImageBitmap(f); const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width*scale); c.height = Math.round(bmp.height*scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(b => r(b || f), 'image/jpeg', 0.88));
+  } catch(_) { return f; }
+}
+$('#readBtn').onclick = async () => {
+  const picked = [...$('#shots').files]; if (!picked.length || !sampleFn) return;
+  setBusy(true); $('#previewBox').hidden = true;
+  const files = await Promise.all(picked.map(fitImage));
+  const per = Math.max(1, imgLimits.maxCount || 1); const chunks = [];
+  for (let i=0;i<files.length;i+=per) chunks.push(files.slice(i,i+per));
+  const found = [];
+  try {
+    for (let i=0;i<chunks.length;i++){
+      $('#readStatus').textContent = chunks.length>1 ? `Claude is reading batch ${i+1} of ${chunks.length}… this can take up to a minute.` : 'Claude is reading… this can take up to a minute.';
+      readCtl = new AbortController();
+      const res = await sampleFn.json(PROMPT, {images: chunks[i], signal: readCtl.signal});
+      if (Array.isArray(res)) found.push(...res);
+    }
+    $('#readStatus').textContent = '';
+    showPreview(found, 'claude');
+  } catch(e){
+    const msg = {cancelled:'Stopped.', not_granted:'Claude wasn’t allowed to read the screenshots. Use Read on this phone instead.', rate_limited:'Too many requests right now. Use Read on this phone instead.', image_rejected:'One screenshot couldn’t be read. Pick PNG or JPEG screenshots.', invalid_json:'Claude’s answer couldn’t be read. Try again with fewer screenshots.', refused:'Claude declined to read these images.'}[e?.code] || 'Something went wrong while reading. Try Read on this phone.';
+    $('#readStatus').textContent = msg;
+  } finally { setBusy(false); }
+};
+
+// ----- preview: every source lands here -----
+function showPreview(found, src){
+  const known = [...new Set(rows.map(r=>r.payee))];
+  const exist = new Set(rows.map(r=>r.id)), existDB = new Set(rows.map(r=>r.dt+'|'+r.bal));
+  const byKey = new Map(); let dup = 0, bad = 0;
+  for (const x of found){
+    const dt = String(x?.datetime||'').trim(); const b = Number(x?.balance);
+    const a = (x?.amount == null || x.amount === '') ? null : Number(x.amount);
+    if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dt) || !isFinite(b) || (a !== null && (!isFinite(a) || a === 0))){ bad++; continue; }
+    const bal = Math.round(b*100), amt = a === null ? null : Math.round(a*100);
+    if (existDB.has(dt+'|'+bal) || (amt !== null && exist.has(dt+'|'+amt))){ dup++; continue; }
+    const raw = String(x.payee||'').trim();
+    const payee = raw ? (src === 'claude' ? raw : MP.snapPayee(raw, known)) : 'Unknown';
+    const cand = {dt, payee, amt, bal, disc:Math.round((Number(x.discount)||0)*100), src:'import'};
+    const k = dt+'|'+bal, seen = byKey.get(k);
+    if (seen){ dup++;   // the same row on two overlapping screenshots: keep the better reading
+      if (seen.payee === 'Unknown' && payee !== 'Unknown') seen.payee = payee;
+      if (seen.amt == null && amt != null) seen.amt = amt;
+      if (!seen.disc && cand.disc) seen.disc = cand.disc;
+      continue; }
+    byKey.set(k, cand);
+  }
+  pending = [...byKey.values()]; pendingMeta = {dup, bad, src};
+  renderPending();
+  $('#previewBox').scrollIntoView({behavior:'smooth', block:'start'});
+}
+// MPay's running balance is the source of truth: it fixes a misread +/− and fills a missing amount
+function checkPending(){
+  const all = rows.concat(pending).sort((p,q)=>p.dt<q.dt?-1:p.dt>q.dt?1:0);
+  for (let i=0;i<all.length;i++){
+    const r = all[i]; if (!pending.includes(r)) continue;
+    const prev = all[i-1];
+    if (!prev){ r.ok = r.amt != null; continue; }
+    const d = r.bal - prev.bal;
+    if (r.amt == null || (r.derived && !r.edited)){ r.amt = d; r.derived = true; }
+    else if (!r.edited && Math.abs(r.amt) === Math.abs(d)) r.amt = d;
+    r.ok = prev.bal + r.amt === r.bal;
+  }
+  for (const r of pending) r.id = r.dt + '|' + r.amt;
+}
+function renderPending(){
+  checkPending();
+  const dropped = pending.filter(r => r.amt == null || r.amt === 0).length;
+  pending = pending.filter(r => r.amt != null && r.amt !== 0);
+  const {dup} = pendingMeta, bad = pendingMeta.bad + dropped;
+  const box = $('#previewBox'); box.hidden = false;
+  if (!pending.length){ box.innerHTML = `<div class="card"><p class="small">No new transactions found.${dup?` ${dup} ${dup>1?'were':'was'} already in your ledger.`:''}${bad?` ${bad} couldn’t be read.`:''}</p></div>`; return; }
+  pending.sort((p,q)=>p.dt<q.dt?-1:1);
+  const n = pending.length, okN = pending.filter(r=>r.ok && !r.derived).length, derN = pending.filter(r=>r.derived).length, badN = pending.filter(r=>!r.ok).length;
+  const notes = [];
+  if (dup) notes.push(`${dup} already added, skipped.`);
+  if (bad) notes.push(`${bad} unreadable, skipped.`);
+  if (badN) notes.push('Rows marked “check” don’t add up with the row before. A row is probably missing or misread: tap it to fix it, or add a screenshot that covers that spot.');
+  if (derN) notes.push(`${derN} amount${derN>1?'s were':' was'} worked out from the balance (marked “from balance”).`);
+  notes.push(badN ? '' : 'Tap any row to fix a name or number.');
+  box.innerHTML = `<div class="sec-h"><h2>Check before adding</h2></div><div class="card">
+    <div class="row-between"><b>${n} new transaction${n>1?'s':''}</b><span class="chip ${okN===n?'ok':'warn'}">${okN} of ${n} match MPay</span></div>
+    <p class="small muted">${notes.filter(Boolean).join(' ')}</p>
+    <div class="preview">${pending.map((r,i) => txHTML(r, {cat:autoCat(r.payee, r.amt), need:false, when:`${dayLabel(r.dt)} ${r.dt.slice(11,16)}`, attrs:`data-pi="${i}"`, extra: r.derived ? '<span class="tag need">from balance</span>' : ''})).join('')}</div>
+    <div class="btns"><button class="btn" id="addAll">Add ${n} transaction${n>1?'s':''}</button><button class="btn ghost" id="discard">Discard</button></div></div>`;
+  box.querySelector('.preview').onclick = e => { const b = e.target.closest('[data-pi]'); if (b) editPending(+b.dataset.pi); };
+  $('#discard').onclick = () => { pending = []; box.hidden = true; };
+  $('#addAll').onclick = addPending;
+}
+function editPending(i){
+  const r = pending[i]; if (!r) return;
+  $('#sheetHost').innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="peTitle">
+    <span class="grabber" aria-hidden="true"></span>
+    <h3 id="peTitle" style="font-size:18px">Fix this transaction</h3>
+    <label class="field">Payee<input type="text" id="peName" value="${esc(r.payee)}"></label>
+    <div class="pair"><label class="field">Amount<input type="number" id="peAmt" inputmode="decimal" step="0.01" value="${(r.amt/100).toFixed(2)}"></label>
+      <label class="field">Balance after<input type="number" id="peBal" inputmode="decimal" step="0.01" value="${(r.bal/100).toFixed(2)}"></label></div>
+    <p class="small muted">Use a minus for spending, like −13.80.</p>
+    <label class="field">Date and time<input type="text" id="peDt" value="${r.dt}"></label>
+    <div class="btns"><button class="btn" id="peSave">Save</button><button class="btn ghost" id="peDel">Remove</button><button class="btn ghost" id="peCancel">Cancel</button></div>
+  </div></div>`;
+  const close = () => { $('#sheetHost').innerHTML = ''; };
+  $('#scrim').onclick = e => { if (e.target.id === 'scrim') close(); };
+  $('#peCancel').onclick = close;
+  $('#peDel').onclick = () => { pending.splice(i,1); close(); renderPending(); };
+  $('#peSave').onclick = () => {
+    const a = parseFloat(String($('#peAmt').value).replace('−','-')), b = parseFloat($('#peBal').value), dt = $('#peDt').value.trim();
+    if (!isFinite(a) || a === 0 || !isFinite(b) || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dt)){ toast('Check the amount, balance and date (YYYY-MM-DD HH:MM:SS)'); return; }
+    Object.assign(r, {payee: $('#peName').value.trim() || 'Unknown', amt: Math.round(a*100), bal: Math.round(b*100), dt, edited:true, derived:false});
+    close(); renderPending();
+  };
+}
+function addPending(){
+  const expenses = rows.concat(pending).filter(r => r.amt <= -5000 && !person(r.payee));
+  for (const r of pending){
+    let base = autoCat(r.payee, r.amt), split = false; const p = person(r.payee);
+    if (p && !FAMILY.has(p) && r.amt > 0 && !state.userRules[r.payee+'|in']){
+      const t = dObj(r.dt).getTime() + secs(r.dt);
+      const c = expenses.filter(e => { const d = t - (dObj(e.dt).getTime()+secs(e.dt)); return d >= -120e3 && d <= 3*3600e3; }).pop();
+      if (c){ base = catOfRaw(c); split = true; }
+    }
+    state.added.push({id:r.dt+'|'+r.amt, dt:r.dt, payee:r.payee, amt:r.amt, bal:r.bal, base, split, disc:r.disc, src:'import'});
+  }
+  const n = pending.length; pending = []; $('#previewBox').hidden = true; $('#shots').value = ''; $('#pasteBox').value = ''; updateShotInfo();
+  save(); render(); toast(`Added ${n} transaction${n>1?'s':''}. Save a backup in Settings.`);
+}
+const secs = dt => ((+dt.slice(11,13))*3600 + (+dt.slice(14,16))*60 + (+dt.slice(17,19)))*1000;
+const catOfRaw = r => r.base ? catOf(r) : autoCat(r.payee, r.amt);
+
+$('#cpBtn').onclick = () => {
+  const v = parseFloat($('#cpInput').value); if (!isFinite(v)){ toast('Type the balance MPay shows, like 250.00'); return; }
+  const now = new Date(); const dt = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  state.checkpoints.push({dt, bal:Math.round(v*100)}); save(); $('#cpInput').value='';
+  buildRows(); const last = rows[rows.length-1]; const diff = Math.round(v*100) - last.bal;
+  render(); toast(diff===0 ? 'Balance matches. Nothing is missing.' : `${money(Math.abs(diff))} MOP doesn’t match. Add the missing screenshots.`);
+};
+
+// ---------- SETTINGS ----------
+function renderSettings(){
+  if (document.activeElement?.closest?.('#tab-settings input')) return;
+  $('#weeklyInput').value = state.weekly/100;
+  const allowance = rows.filter(r=>['allowance','topup'].includes(catOf(r))).reduce((a,r)=>a+r.amt,0);
+  const days = rows.length ? (dObj(rows[rows.length-1].dt) - dObj(rows[0].dt))/864e5 + 1 : 7;
+  $('#weeklyHint').textContent = rows.length ? `Allowance and cash top-ups average about MOP ${money(Math.round(allowance/(days/7)/100)*100)} a week.` : 'Pick an amount you can spend each week. Monday starts a new week.';
+  $('#limitInputs').innerHTML = SPEND.filter(c=>!['people','unknown'].includes(c)).map(c=>`<div class="limitrow"><label for="lim-${c}">${LABEL[c]}</label><input type="number" id="lim-${c}" inputmode="decimal" placeholder="No limit" value="${state.limits[c]?state.limits[c]/100:''}"></div>`).join('');
+  const conf = Object.values(state.confirmed);
+  const right = conf.filter(x=>x.g===x.f).length;
+  $('#accuracy').innerHTML = conf.length ? `<div class="row-between"><span>Right on the rows you checked</span><span class="num">${right} of ${conf.length} · ${Math.round(right/conf.length*100)}%</span></div><p class="small muted">Each time you open a transaction and save its category, it counts toward this score.</p>`
+    : `<p class="small muted">No rows checked yet. Open any transaction in Activity and save its category; this score shows how often the automatic guess was right.</p>`;
+  const rules = Object.entries(state.userRules);
+  $('#ruleList').innerHTML = rules.length ? rules.map(([k,c])=>{ const [p,dir]=k.split(/\|(?=in$|out$)/); return `<div><span>${esc(p)} <span class="muted small">${dir==='in'?'money in':'payments'}</span></span><span style="display:flex;gap:8px;align-items:center"><span class="tag">${LABEL[c]}</span><button class="xbtn" data-rule="${esc(k)}">Remove</button></span></div>`; }).join('')
+    : `<span class="small muted">None yet. Ticking “Use this for every…” when you set a category adds one.</span>`;
+  $('#backupInfo').textContent = state.lastBackup ? `Last backup ${dayLabel(state.lastBackup)}.` : 'No backup saved yet.';
+  $('#backupBtn').hidden = !dl && !standalone;
+}
+$('#saveBudget').onclick = () => {
+  const w = parseFloat($('#weeklyInput').value); if (w>0) state.weekly = Math.round(w*100);
+  for (const c of SPEND){ const el = $('#lim-'+c); if (!el) continue; const v = parseFloat(el.value); if (v>0) state.limits[c]=Math.round(v*100); else delete state.limits[c]; }
+  save(); document.activeElement?.blur(); render(); toast('Budget saved');
+};
+$('#ruleList').onclick = e => { const b = e.target.closest('[data-rule]'); if(!b) return; delete state.userRules[b.dataset.rule]; save(); render(); toast('Rule removed'); };
+// A backup holds every transaction (not just imported ones) plus the shop rules, so restoring it into
+// another copy of the ledger, such as the Home Screen app from GitHub, brings everything across.
+function backupData(){
+  const rules = {...state.userRules};
+  for (const r of rows){ if (r.split) continue; const k = ruleKey(r); if (rules[k]) continue;
+    for (const [re,c] of MY_RULES) if (re.test(r.payee)){ rules[k] = c; break; } }
+  for (const f of MY_FAMILY){ const k = 'Transfer ' + f + '|in'; if (!rules[k]) rules[k] = 'allowance'; }
+  const history = rows.map(r => ({id:r.id, dt:r.dt, payee:r.payee, amt:r.amt, bal:r.bal, base:r.base, split:r.split, disc:r.disc}));
+  return JSON.stringify({app:'bosco-ledger', version:2, saved:new Date().toISOString(), state:{...state, userRules:rules}, history});
+}
+const standalone = !window.claude;   // opened outside Claude (GitHub / Home Screen app)
+$('#backupBtn').onclick = async () => {
+  const filename = `bosco-ledger-backup-${ymd(new Date())}.json`, data = backupData();
+  try {
+    if (dl) await dl.save({filename, data});
+    else if (standalone){
+      const file = new File([data], filename, {type:'application/json'});
+      if (navigator.canShare && navigator.canShare({files:[file]})) await navigator.share({files:[file], title:'Bosco\'s Ledger backup'});
+      else { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], {type:'application/json'})); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+    } else return;
+    state.lastBackup = ymd(new Date()); save(); renderSettings(); toast('Backup saved');
+  } catch(e){ toast(e?.code==='declined' || e?.name==='AbortError' ? 'Backup not saved' : 'Couldn’t save the backup here'); }
+};
+$('#restoreFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const j = JSON.parse(await f.text()); if (j?.app!=='bosco-ledger' || !j.state) throw 0;
+    const st = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), j.state);
+    if (Array.isArray(j.history)){
+      const have = new Set(SEED.map(a=>a[0]+'|'+a[2]).concat((st.added||[]).map(r=>r.id)));
+      for (const h of j.history){ if (!h || !h.id || have.has(h.id)) continue;
+        st.added.push({id:h.id, dt:h.dt, payee:h.payee, amt:h.amt, bal:h.bal, base:h.base || autoCat(h.payee, h.amt), split:!!h.split, disc:h.disc||0, src:'backup'}); have.add(h.id); }
+    }
+    state = st; if (!state.ui || typeof state.ui !== 'object') state.ui = JSON.parse(JSON.stringify(DEFAULT.ui));
+    save(); render(); toast(`Backup restored · ${rows.length} transactions`);
+  } catch(_){ toast('That file isn’t a ledger backup'); }
+  e.target.value = '';
+};
+
+// ---------- NAV ----------
+const TABS = ['home','activity','trends','add','settings'];
+function go(tab){
+  for (const t of TABS) $('#tab-'+t).hidden = t !== tab;
+  document.querySelectorAll('nav.tabs button').forEach(b => b.dataset.tab===tab ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  window.scrollTo(0,0);
+  if (tab === 'trends') renderTrends();
+  if (tab === 'home') renderSpark();
+}
+document.querySelector('nav.tabs').onclick = e => { const b=e.target.closest('button'); if (b) go(b.dataset.tab); };
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g){ go(g.dataset.go); return; }
+  const m = e.target.closest('[data-month]'); if (m){ selMonth = m.dataset.month; render(); return; }
+  const md = e.target.closest('[data-mode]'); if (md){ state.ui.mode = md.dataset.mode; tActive = null; save(); renderTrends(); return; }
+  const se = e.target.closest('[data-series]'); if (se){ const k = se.dataset.series; state.ui.show[k] = !state.ui.show[k]; save(); renderTrends(); return; }
+  const rg = e.target.closest('[data-range]'); if (rg){ const [from,to,label] = rg.dataset.range.split('|'); fRange = {from,to,label}; fCat = 'all'; fMonth = 'all'; renderActivity(); go('activity'); return; }
+  if (e.target.closest('#clearRange')){ fRange = null; renderActivity(); return; }
+  const c = e.target.closest('.cat[data-cat]'); if (c){ fCat = c.dataset.cat; fMonth = c.dataset.m; fRange = null; renderActivity(); go('activity'); return; }
+  const t = e.target.closest('.tx[data-id]'); if (t){ const r = rows.find(x=>x.id===t.dataset.id); if (r) openSheet(r); }
+});
+$('#filterCat').onchange = e => { fCat = e.target.value; renderActivity(); };
+$('#filterMonth').onchange = e => { fMonth = e.target.value; fRange = null; renderActivity(); };
+document.addEventListener('keydown', e => { if (e.key==='Escape') $('#sheetHost').innerHTML=''; });
+let rsT; window.addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => {
+  if (!$('#tab-home').hidden) renderSpark(); if (!$('#tab-trends').hidden) renderTrends(); }, 150); });
+
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 3200); }
+
+const initialTab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+render(); go(initialTab); setupClaude();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

@@ -30,3 +30,4 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 
 - [Plate Log](plate-log/): personal training log for a 5-day split. Data is saved in the browser on your phone; use Save backup on the Plan tab to keep a copy.
 - [Lull](lull/): night-sky sleep journal with one-tap tracking, morning check-ins, dreams, trends and sleep sounds. Data is saved in the browser on your phone; use Export backup in Settings to keep a copy.
+- [Bosco's Ledger](ledger/): MPay spending tracker with weekly safe-to-spend, limits, trends, and MPay screenshots read on the phone. Data is saved in the browser on your phone and the app starts empty; bring your history over with Restore backup in Settings.
