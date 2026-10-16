@@ -25,3 +25,7 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 - After every 5th food a bonus critter appears for 20 moves. It's worth `5 × level` plus the moves left.
 - With walls off the snake wraps around the edges. With walls on, hitting the border ends the game.
 - Your best score, level, and walls setting are saved in the browser.
+
+## Also in this repo
+
+- [Plate Log](plate-log/): personal training log for a 5-day split. Data is saved in the browser on your phone; use Save backup on the Plan tab to keep a copy.
