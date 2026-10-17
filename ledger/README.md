@@ -16,6 +16,17 @@ Everything is saved in the browser on your phone. Nothing is uploaded, and this 
 - **Save backup file** in Settings writes every transaction, category and rule to one file.
 - **Restore backup** in Settings loads that file, so you can move between phones, or between this app and the copy in Claude.
 
+## Home Screen widget
+
+The widget runs in [Scriptable](https://scriptable.app), a free iPhone app, from `widget/Ledger Widget.js`. It shows safe-to-spend for the week, your monthly limits and this week's spending, in small, medium and large sizes plus Lock Screen widgets.
+
+1. Install Scriptable.
+2. In the ledger, open Settings and tap **Copy widget script**. In Scriptable tap **+**, paste, and name the script **Ledger Widget**.
+3. Tap **Update widget** in the ledger. It opens Scriptable with a small summary of your numbers (no transactions).
+4. Add a Scriptable widget to your Home Screen, tap it, and choose **Ledger Widget**.
+
+Tap **Widget** at the top of Home whenever you add transactions; a dot appears there when the widget is behind.
+
 ## Install on iPhone
 
 Open the page in Safari, tap Share, then **Add to Home Screen**. It then opens like an app and keeps working without signal once the screenshot reader has been used once.
