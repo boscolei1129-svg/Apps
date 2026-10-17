@@ -14,10 +14,20 @@ const C = {
 const DAY = ["M", "T", "W", "T", "F", "S", "S"];
 
 // ---------- data ----------
-const fm = FileManager.local();
-const path = fm.joinPath(fm.documentsDirectory(), FILE);
+// Saved in the Keychain, which Scriptable's widgets can always read, with a file copy as backup.
+const KEY = "bosco-ledger-widget";
+let fm = null, path = null;
+try { fm = FileManager.local(); path = fm.joinPath(fm.documentsDirectory(), FILE); } catch (e) {}
 function valid(d) { return d && d.v === 1 && typeof d.weekly === "number" && typeof d.wkStart === "string" && Array.isArray(d.days); }
-function load() { try { if (fm.fileExists(path)) { const d = JSON.parse(fm.readString(path)); if (valid(d)) return d; } } catch (e) {} return null; }
+function store(str) {
+  try { Keychain.set(KEY, str); } catch (e) {}
+  try { if (fm) fm.writeString(path, str); } catch (e) {}
+}
+function load() {
+  const tries = [() => Keychain.contains(KEY) ? Keychain.get(KEY) : null, () => fm && fm.fileExists(path) ? fm.readString(path) : null];
+  for (const t of tries) { try { const s = t(); if (s) { const d = JSON.parse(s); if (valid(d)) return d; } } catch (e) {} }
+  return null;
+}
 
 let synced = false, rejected = false;
 let incoming = args.queryParameters && args.queryParameters.d;
@@ -25,7 +35,7 @@ if (!incoming && config.runsInApp) {
   try { const clip = (Pasteboard.pasteString ? Pasteboard.pasteString() : Pasteboard.paste()) || ""; if (clip.startsWith(PREFIX)) incoming = clip.slice(PREFIX.length); } catch (e) {}
 }
 if (incoming) {
-  try { const d = JSON.parse(incoming); if (!valid(d)) throw 0; fm.writeString(path, JSON.stringify(d)); synced = true; }
+  try { const d = JSON.parse(incoming); if (!valid(d)) throw 0; store(JSON.stringify(d)); synced = true; }
   catch (e) { rejected = true; }
 }
 const data = load();
@@ -223,13 +233,20 @@ function setup(w, fam) {
 
 // ---------- run ----------
 const fam = config.widgetFamily || "medium";
-const w = new ListWidget();
-if (!data) setup(w, fam);
-else {
-  const m = compute(data);
-  if (fam.startsWith("accessory")) accessory(w, m, fam);
-  else { background(w); ({ small, medium, large, extraLarge: large }[fam] || medium)(w, m); }
-  if (m.url) w.url = m.url;
+let w = new ListWidget();
+try {
+  if (!data) setup(w, fam);
+  else {
+    const m = compute(data);
+    if (fam.startsWith("accessory")) accessory(w, m, fam);
+    else { background(w); ({ small, medium, large, extraLarge: large }[fam] || medium)(w, m); }
+    if (m.url) w.url = m.url;
+  }
+} catch (e) {
+  // show what went wrong instead of a blank widget
+  w = new ListWidget(); w.backgroundColor = C.bg; w.setPadding(12, 12, 12, 12);
+  const a = w.addText("Ledger widget error"); a.font = Font.boldSystemFont(12); a.textColor = C.over;
+  const b = w.addText(String(e && e.message || e)); b.font = Font.mediumSystemFont(10); b.textColor = C.ink;
 }
 const nextHalfHour = new Date(Date.now() + 30 * 60 * 1000); w.refreshAfterDate = nextHalfHour;
 
