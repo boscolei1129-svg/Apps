@@ -82,9 +82,6 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 /* header */
 .top{display:flex;align-items:center;gap:12px}
-.hdr-btn{margin-left:auto;position:relative;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--surface);box-shadow:var(--shadow);border-radius:99px;padding:8px 12px 8px 10px;font-size:13px;font-weight:600;color:var(--ink)}
-.hdr-btn svg{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2}
-.hdr-dot{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:99px;background:var(--warn);box-shadow:0 0 0 2px var(--bg)}
 .avatar{width:42px;height:42px;flex:none;display:block}
 .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.02em}
 .status{display:flex;flex-direction:column;gap:10px}
@@ -292,7 +289,6 @@ nav.tabs .dot{position:absolute;top:2px;right:calc(50% - 22px);background:var(--
   <header class="top">
     <svg class="avatar" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="logoG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12996F"></stop><stop offset="1" stop-color="#053A2D"></stop></linearGradient></defs><rect width="512" height="512" rx="114" fill="url(#logoG)"></rect><rect x="128" y="268" width="68" height="128" rx="34" fill="#FFFFFF" fill-opacity="0.45"></rect><rect x="222" y="196" width="68" height="200" rx="34" fill="#FFFFFF" fill-opacity="0.72"></rect><rect x="316" y="116" width="68" height="280" rx="34" fill="#FFFFFF"></rect><circle cx="350" cy="150" r="14" fill="#12996F"></circle></svg>
     <div><div class="eyebrow" id="todayLbl"></div><h1>Bosco's Ledger</h1></div>
-    <button class="hdr-btn" id="widgetHdrBtn" hidden aria-label="Update widget"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="2"></rect><rect x="3.5" y="13.5" width="17" height="7" rx="2"></rect></svg>Widget<span class="hdr-dot" id="widgetDot" hidden></span></button>
   </header>
 
   <!-- HOME -->
@@ -457,20 +453,6 @@ nav.tabs .dot{position:absolute;top:2px;right:calc(50% - 22px);background:var(--
     </div>
 
     <div class="sec">
-      <div class="sec-h"><h2>Home Screen widget</h2></div>
-      <div class="card">
-        <p class="small muted">Shows safe-to-spend, your limits and this week's spending on your Home Screen or Lock Screen, using Scriptable, a free app.</p>
-        <ol class="steps">
-          <li>Install <b>Scriptable</b> from the App Store.</li>
-          <li>Tap <b>Copy widget script</b>. In Scriptable tap <b>+</b>, paste, and name the script <b>Ledger Widget</b>.</li>
-          <li>Tap <b>Update widget</b>. Then touch and hold your Home Screen, tap <b>Edit → Add Widget</b>, add <b>Scriptable</b>, tap the widget and choose <b>Ledger Widget</b>.</li>
-        </ol>
-        <div class="btns"><button class="btn" id="widgetBtn">Update widget</button><button class="btn ghost" id="copyScriptBtn">Copy widget script</button></div>
-        <p class="small muted" id="widgetInfo"></p>
-      </div>
-    </div>
-
-    <div class="sec">
       <div class="sec-h"><h2>Backup</h2></div>
       <div class="card">
         <p class="small">Your changes are saved on this phone only. Clearing Safari data or switching phones erases them, so save a backup after each import.</p>
@@ -504,7 +486,6 @@ const SEED = [];
 const MY_RULES = [];
 const MY_FAMILY = [];
 const MY_CHECKPOINTS = [];
-const MY_OPEN_URL = '';   // iPhone widgets can't open a Home Screen web app, so tapping shows the widget in Scriptable
 
 const SPEND = ['games','groceries','eating','snacks','transport','fun','shopping','people','unknown'];
 const INCOME = ['allowance','topup','from_people'];
@@ -675,7 +656,7 @@ function render(){
   renderGoal();
   const need = rows.filter(needsLabel).length;
   $('#needDot').hidden = !need; $('#needDot').textContent = need;
-  renderActivity(); renderSettings(); renderWidgetState();
+  renderActivity(); renderSettings();
   if (!$('#tab-home').hidden) renderSpark();
   if (!$('#tab-trends').hidden) renderTrends();
 }
@@ -1450,7 +1431,7 @@ function addPending(){
     state.added.push({id:r.dt+'|'+r.amt, dt:r.dt, payee:r.payee, amt:r.amt, bal:r.bal, base, split, disc:r.disc, src:'import'});
   }
   const n = pending.length; pending = []; $('#previewBox').hidden = true; $('#shots').value = ''; $('#pasteBox').value = ''; updateShotInfo();
-  save(); render(); toast(`Added ${n} transaction${n>1?'s':''}.${state.widgetAt ? ' Tap Widget to update it.' : ' Save a backup in Settings.'}`);
+  save(); render(); toast(`Added ${n} transaction${n>1?'s':''}. Save a backup in Settings.`);
 }
 const secs = dt => ((+dt.slice(11,13))*3600 + (+dt.slice(14,16))*60 + (+dt.slice(17,19)))*1000;
 const catOfRaw = r => r.base ? catOf(r) : autoCat(r.payee, r.amt);
@@ -1524,65 +1505,6 @@ $('#restoreFile').onchange = async e => {
   } catch(_){ toast('That file isn’t a ledger backup'); }
   e.target.value = '';
 };
-
-// ---------- WIDGET ----------
-// The Home Screen widget runs in Scriptable, which can't read this page's data, so the page sends it a small
-// summary (no transactions): by link where it can open Scriptable directly, and always by clipboard as a fallback.
-const WIDGET_SCRIPT = "// Bosco's Ledger \u2014 Home Screen and Lock Screen widget for Scriptable.\n// Setup: in Scriptable tap +, paste this script, and name it exactly \"Ledger Widget\".\n// Then in the ledger tap Settings \u2192 Update widget. Add a Scriptable widget and pick \"Ledger Widget\".\n// The ledger sends a small summary (no transactions): by link, or by clipboard if the link can't open.\n\nconst FILE = \"bosco-ledger-widget.json\";\nconst PREFIX = \"BOSCO-LEDGER-WIDGET:\";\nconst C = {\n  bgTop: new Color(\"#1D5546\"), bg: new Color(\"#0F2C26\"),\n  ink: new Color(\"#EEF6F2\"), muted: new Color(\"#A6C8BE\"), mint: new Color(\"#7FE0C2\"),\n  over: new Color(\"#FF9C86\"), warn: new Color(\"#F2C46B\"),\n  track: new Color(\"#FFFFFF\", 0.14), faint: new Color(\"#FFFFFF\", 0.45), dim: new Color(\"#FFFFFF\", 0.22)\n};\nconst DAY = [\"M\", \"T\", \"W\", \"T\", \"F\", \"S\", \"S\"];\n\n// ---------- data ----------\n// Saved in the Keychain, which Scriptable's widgets can always read, with a file copy as backup.\nconst KEY = \"bosco-ledger-widget\";\nlet fm = null, path = null;\ntry { fm = FileManager.local(); path = fm.joinPath(fm.documentsDirectory(), FILE); } catch (e) {}\nfunction valid(d) { return d && d.v === 1 && typeof d.weekly === \"number\" && typeof d.wkStart === \"string\" && Array.isArray(d.days); }\nfunction store(str) {\n  try { Keychain.set(KEY, str); } catch (e) {}\n  try { if (fm) fm.writeString(path, str); } catch (e) {}\n}\nfunction load() {\n  const tries = [() => Keychain.contains(KEY) ? Keychain.get(KEY) : null, () => fm && fm.fileExists(path) ? fm.readString(path) : null];\n  for (const t of tries) { try { const s = t(); if (s) { const d = JSON.parse(s); if (valid(d)) return d; } } catch (e) {} }\n  return null;\n}\n\nlet synced = false, rejected = false;\nlet incoming = args.queryParameters && args.queryParameters.d;\nif (!incoming && config.runsInApp) {\n  try { const clip = (Pasteboard.pasteString ? Pasteboard.pasteString() : Pasteboard.paste()) || \"\"; if (clip.startsWith(PREFIX)) incoming = clip.slice(PREFIX.length); } catch (e) {}\n}\nif (incoming) {\n  try { const d = JSON.parse(incoming); if (!valid(d)) throw 0; store(JSON.stringify(d)); synced = true; }\n  catch (e) { rejected = true; }\n}\nconst data = load();\n\n// ---------- helpers ----------\nconst pad = n => String(n).padStart(2, \"0\");\nconst ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;\nconst dateOf = s => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));\nconst addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };\nconst mondayOf = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; };\nconst dayDiff = (a, b) => Math.round((b - a) / 864e5);\nfunction money(c, cents = true) {\n  const neg = c < 0; c = Math.abs(c);\n  const whole = Math.floor(cents ? c / 100 : Math.round(c / 100));\n  const s = String(whole).replace(/\\B(?=(\\d{3})+(?!\\d))/g, \",\");\n  return (neg ? \"-\" : \"\") + s + (cents ? \".\" + pad(Math.round(c % 100)) : \"\");\n}\n\n// everything the layouts need, worked out for *today* from the last sync\nfunction compute(d) {\n  const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());\n  const wk = dateOf(d.wkStart), next = addDays(wk, 7);\n  const newWeek = t0 >= next;\n  const weekEnd = newWeek ? addDays(mondayOf(t0), 7) : next;\n  const spent = newWeek ? 0 : d.spentWk;\n  const left = d.weekly - spent;\n  const daysLeft = Math.max(1, dayDiff(t0, weekEnd));\n  const todayIdx = newWeek ? -1 : (t0.getDay() + 6) % 7;\n  const sameMonth = d.month === ymd(t0).slice(0, 7);\n  const at = new Date(d.at), hrs = (now - at) / 36e5;\n  const syncTxt = ymd(at) === ymd(now) ? `Synced ${pad(at.getHours())}:${pad(at.getMinutes())}`\n    : hrs < 24 * 6 ? `Synced ${[\"Sun\", \"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\"][at.getDay()]}` : `Synced ${at.getDate()}/${at.getMonth() + 1}`;\n  return {\n    newWeek, left, over: left < 0, perDay: left > 0 ? left / daysLeft : 0, daysLeft, spent, weekly: d.weekly,\n    pct: d.weekly > 0 ? Math.max(0, Math.min(1, spent / d.weekly)) : 0,\n    days: newWeek ? [0, 0, 0, 0, 0, 0, 0] : d.days, todayIdx,\n    limits: sameMonth ? (d.limits || []) : [], cats: sameMonth ? (d.cats || []) : [],\n    bal: d.bal, stale: hrs > 48 || newWeek, syncTxt, url: d.url || \"\"\n  };\n}\n\n// ---------- drawing ----------\nfunction logo(size) {\n  const ctx = new DrawContext(); ctx.size = new Size(size, size); ctx.opaque = false; ctx.respectScreenScale = true;\n  const u = size / 512, bar = (x, y, h, col) => { const p = new Path(); p.addRoundedRect(new Rect(x * u, y * u, 68 * u, h * u), 34 * u, 34 * u); ctx.addPath(p); ctx.setFillColor(col); ctx.fillPath(); };\n  bar(128, 268, 128, new Color(\"#FFFFFF\", 0.45)); bar(222, 196, 200, new Color(\"#FFFFFF\", 0.72)); bar(316, 116, 280, C.ink);\n  return ctx.getImage();\n}\nfunction progress(w, h, pct, over) {\n  const ctx = new DrawContext(); ctx.size = new Size(w, h); ctx.opaque = false; ctx.respectScreenScale = true;\n  const r = h / 2, track = new Path(); track.addRoundedRect(new Rect(0, 0, w, h), r, r); ctx.addPath(track); ctx.setFillColor(C.track); ctx.fillPath();\n  if (pct > 0) { const f = new Path(); f.addRoundedRect(new Rect(0, 0, Math.max(h, w * pct), h), r, r); ctx.addPath(f); ctx.setFillColor(over ? C.over : C.mint); ctx.fillPath(); }\n  return ctx.getImage();\n}\nfunction weekBars(w, h, m) {\n  const ctx = new DrawContext(); ctx.size = new Size(w, h); ctx.opaque = false; ctx.respectScreenScale = true;\n  const labelH = 13, chartH = h - labelH, slot = w / 7, bw = Math.min(14, slot * 0.56);\n  const daily = m.weekly / 7, max = Math.max(daily * 1.15, ...m.days, 1);\n  // a faint line at the even daily share of the weekly budget\n  const ly = chartH - (daily / max) * chartH, line = new Path(); line.addRect(new Rect(0, ly, w, 1)); ctx.addPath(line); ctx.setFillColor(C.dim); ctx.fillPath();\n  ctx.setFont(Font.semiboldSystemFont(9)); ctx.setTextAlignedCenter();\n  for (let i = 0; i < 7; i++) {\n    const x = i * slot + (slot - bw) / 2, v = m.days[i] || 0, future = m.todayIdx >= 0 && i > m.todayIdx;\n    const bh = future ? 3 : Math.max(3, (v / max) * (chartH - 2));\n    const p = new Path(); p.addRoundedRect(new Rect(x, chartH - bh, bw, bh), Math.min(bw / 2, bh / 2), Math.min(bw / 2, bh / 2)); ctx.addPath(p);\n    ctx.setFillColor(i === m.todayIdx ? C.mint : future ? C.dim : v > daily ? new Color(\"#FFFFFF\", 0.78) : C.faint); ctx.fillPath();\n    ctx.setTextColor(i === m.todayIdx ? C.mint : C.muted);\n    ctx.drawTextInRect(DAY[i], new Rect(i * slot, chartH + 2, slot, 11));\n  }\n  return ctx.getImage();\n}\nfunction ring(size, frac, label) {\n  const ctx = new DrawContext(); ctx.size = new Size(size, size); ctx.opaque = false; ctx.respectScreenScale = true;\n  const c = size / 2, r = size / 2 - 4, arc = (from, to, col) => {\n    const p = new Path(), steps = 48; for (let i = 0; i <= steps; i++) { const a = -Math.PI / 2 + (from + (to - from) * i / steps) * Math.PI * 2; const pt = new Point(c + r * Math.cos(a), c + r * Math.sin(a)); i ? p.addLine(pt) : p.move(pt); }\n    ctx.addPath(p); ctx.setStrokeColor(col); ctx.setLineWidth(5); ctx.strokePath();\n  };\n  arc(0, 1, new Color(\"#FFFFFF\", 0.25)); if (frac > 0) arc(0, frac, Color.white());\n  ctx.setFont(Font.boldRoundedSystemFont(label.length > 4 ? 11 : 14)); ctx.setTextColor(Color.white()); ctx.setTextAlignedCenter();\n  ctx.drawTextInRect(label, new Rect(0, c - 9, size, 18));\n  return ctx.getImage();\n}\n\n// widget widths in points by screen size (Apple's published sizes); bars are drawn to fit\nfunction sizes() {\n  let sw = 393, sh = 852;\n  try { const s = Device.screenSize(); sw = Math.min(s.width, s.height); sh = Math.max(s.width, s.height); } catch (e) {}\n  const small = sw >= 428 ? 170 : sw >= 414 ? 169 : sw >= 390 ? 158 : sw >= 375 ? (sh > 700 ? 155 : 148) : 141;\n  const medium = sw >= 428 ? 364 : sw >= 414 ? 360 : sw >= 390 ? 338 : sw >= 375 ? (sh > 700 ? 329 : 321) : 292;\n  return { small, medium };\n}\nconst SZ = sizes();\n\n// ---------- layouts ----------\nfunction txt(parent, s, size, color, weight = \"semibold\", rounded = false) {\n  const t = parent.addText(s);\n  const f = rounded ? { bold: Font.boldRoundedSystemFont, heavy: Font.heavyRoundedSystemFont, semibold: Font.semiboldRoundedSystemFont, medium: Font.mediumRoundedSystemFont }\n                    : { bold: Font.boldSystemFont, heavy: Font.heavySystemFont, semibold: Font.semiboldSystemFont, medium: Font.mediumSystemFont };\n  t.font = (f[weight] || f.semibold)(size); t.textColor = color; t.lineLimit = 1; t.minimumScaleFactor = 0.5;\n  return t;\n}\nfunction row(parent) { const s = parent.addStack(); s.layoutHorizontally(); s.centerAlignContent(); return s; }\nfunction background(w) {\n  const g = new LinearGradient(); g.colors = [C.bgTop, C.bg]; g.locations = [0, 1]; g.startPoint = new Point(1, 0); g.endPoint = new Point(0, 1);\n  w.backgroundGradient = g;\n}\n\n// left half of medium, and all of small: the safe-to-spend block\nfunction hero(parent, m, width, compact = false) {\n  const head = row(parent); head.addImage(logo(14)).imageSize = new Size(14, 14); head.addSpacer(5);\n  txt(head, m.over ? \"OVER BUDGET\" : m.newWeek ? \"NEW WEEK\" : \"SAFE TO SPEND\", 10, m.over ? C.over : C.muted, \"bold\");\n  head.addSpacer();\n  parent.addSpacer(8);\n  const cur = row(parent); txt(cur, m.over ? \"over by MOP\" : \"MOP\", 11, C.muted, \"semibold\"); cur.addSpacer();\n  const amt = row(parent); txt(amt, money(Math.abs(m.left)), 30, m.over ? C.over : C.ink, \"bold\", true); amt.addSpacer();\n  parent.addSpacer(7);\n  const bar = row(parent); bar.addImage(progress(width, 6, m.pct, m.over)).imageSize = new Size(width, 6);\n  parent.addSpacer(7);\n  const per = row(parent);\n  txt(per, m.over ? (compact ? \"Wait until Monday\" : \"Hold off until Monday\") : m.daysLeft > 1 ? (compact ? `MOP ${money(m.perDay, false)}/day \u00b7 ${m.daysLeft} days` : `\u2248 MOP ${money(m.perDay, false)} a day \u00b7 ${m.daysLeft} days`) : `MOP ${money(m.left, false)} left today`, 11, C.ink, \"medium\");\n  per.addSpacer();\n}\nfunction footer(parent, m) {\n  const f = row(parent);\n  txt(f, m.newWeek ? \"Open Ledger to sync\" : m.syncTxt, 10, m.stale ? C.warn : C.muted, \"medium\");\n  f.addSpacer();\n}\nfunction limitRow(parent, l, width) {\n  const r1 = row(parent); txt(r1, l.n, 10, C.muted, \"semibold\"); r1.addSpacer();\n  txt(r1, `${money(l.used, false)} / ${money(l.max, false)}`, 10, l.used > l.max ? C.over : C.ink, \"semibold\");\n  parent.addSpacer(4);\n  const r2 = row(parent); r2.addImage(progress(width, 5, Math.min(1, l.used / l.max), l.used > l.max)).imageSize = new Size(width, 5);\n}\nfunction small(w, m) {\n  w.setPadding(14, 14, 12, 14);\n  hero(w, m, SZ.small - 28, true);\n  w.addSpacer();\n  footer(w, m);\n}\nfunction medium(w, m) {\n  w.setPadding(14, 15, 12, 15);\n  const inner = SZ.medium - 30, lw = Math.round(inner * 0.45), rw = inner - lw - 14, ih = SZ.small - 26;\n  const cols = row(w); cols.topAlignContent();\n  const left = cols.addStack(); left.layoutVertically(); left.size = new Size(lw, ih);\n  hero(left, m, lw); left.addSpacer(); footer(left, m);\n  cols.addSpacer(14);\n  const right = cols.addStack(); right.layoutVertically(); right.size = new Size(rw, ih);\n  const h = row(right); txt(h, \"THIS WEEK\", 10, C.muted, \"bold\"); h.addSpacer(); txt(h, `MOP ${money(m.spent, false)}`, 10, C.ink, \"semibold\");\n  right.addSpacer(6);\n  right.addImage(weekBars(rw, 62, m)).imageSize = new Size(rw, 62);\n  right.addSpacer(8);\n  if (m.limits.length) limitRow(right, m.limits[0], rw);\n  else if (m.bal != null) { const b = row(right); txt(b, \"MPay balance\", 10, C.muted, \"semibold\"); b.addSpacer(); txt(b, money(m.bal), 10, C.ink, \"semibold\"); }\n  right.addSpacer();\n}\nfunction large(w, m) {\n  w.setPadding(16, 16, 14, 16);\n  const lw = SZ.medium - 32;\n  hero(w, m, lw);\n  w.addSpacer(14);\n  const h = row(w); txt(h, \"THIS WEEK\", 10, C.muted, \"bold\"); h.addSpacer(); txt(h, `MOP ${money(m.spent, false)} of ${money(m.weekly, false)}`, 10, C.ink, \"semibold\");\n  w.addSpacer(6);\n  w.addImage(weekBars(lw, 70, m)).imageSize = new Size(lw, 70);\n  w.addSpacer(12);\n  for (const l of m.limits.slice(0, 2)) { limitRow(w, l, lw); w.addSpacer(8); }\n  if (m.cats.length) {\n    const ch = row(w); txt(ch, \"THIS MONTH\", 10, C.muted, \"bold\"); ch.addSpacer(); w.addSpacer(4);\n    for (const [n, v] of m.cats.slice(0, 3)) { const r = row(w); txt(r, n, 11, C.ink, \"medium\"); r.addSpacer(); txt(r, money(v, false), 11, C.ink, \"semibold\"); w.addSpacer(2); }\n  }\n  w.addSpacer();\n  const f = row(w); txt(f, m.newWeek ? \"Open Ledger to sync\" : m.syncTxt, 10, m.stale ? C.warn : C.muted, \"medium\"); f.addSpacer();\n  if (m.bal != null) txt(f, `MPay ${money(m.bal)}`, 10, C.muted, \"medium\");\n}\nfunction accessory(w, m, fam) {\n  if (fam === \"accessoryInline\") { w.addText(m.over ? `Over budget by MOP ${money(-m.left, false)}` : `MOP ${money(m.left, false)} left this week`); return; }\n  if (fam === \"accessoryCircular\") {\n    w.addAccessoryWidgetBackground = true;\n    const frac = m.weekly > 0 ? Math.max(0, Math.min(1, m.left / m.weekly)) : 0;\n    w.addImage(ring(58, frac, m.over ? \"Over\" : money(m.left, false))).imageSize = new Size(58, 58);\n    return;\n  }\n  const a = w.addText(m.over ? \"Over budget\" : \"Safe to spend\"); a.font = Font.semiboldSystemFont(12);\n  const b = w.addText(`MOP ${money(Math.abs(m.left))}`); b.font = Font.boldRoundedSystemFont(20); b.minimumScaleFactor = 0.6; b.lineLimit = 1;\n  const c = w.addText(m.over ? \"until Monday\" : `\u2248 ${money(m.perDay, false)}/day \u00b7 ${m.daysLeft}d`); c.font = Font.mediumSystemFont(11);\n}\nfunction setup(w, fam) {\n  if (String(fam).startsWith(\"accessory\")) { w.addText(\"Open Ledger \u2192 Update widget\"); return; }\n  background(w); w.setPadding(14, 14, 14, 14);\n  const h = row(w); h.addImage(logo(16)).imageSize = new Size(16, 16); h.addSpacer(6); txt(h, \"Ledger\", 13, C.ink, \"bold\"); h.addSpacer();\n  w.addSpacer(8);\n  const t = w.addText(rejected ? \"That wasn't ledger data. Tap Update widget in the ledger again.\" : \"Open the ledger, go to Settings and tap Update widget.\");\n  t.font = Font.mediumSystemFont(12); t.textColor = C.ink;\n  w.addSpacer();\n}\n\n// ---------- run ----------\nconst fam = config.widgetFamily || \"medium\";\nlet w = new ListWidget();\ntry {\n  if (!data) setup(w, fam);\n  else {\n    const m = compute(data);\n    if (fam.startsWith(\"accessory\")) accessory(w, m, fam);\n    else { background(w); ({ small, medium, large, extraLarge: large }[fam] || medium)(w, m); }\n    if (m.url) w.url = m.url;\n  }\n} catch (e) {\n  // show what went wrong instead of a blank widget\n  w = new ListWidget(); w.backgroundColor = C.bg; w.setPadding(12, 12, 12, 12);\n  const a = w.addText(\"Ledger widget error\"); a.font = Font.boldSystemFont(12); a.textColor = C.over;\n  const b = w.addText(String(e && e.message || e)); b.font = Font.mediumSystemFont(10); b.textColor = C.ink;\n}\nconst nextHalfHour = new Date(Date.now() + 30 * 60 * 1000); w.refreshAfterDate = nextHalfHour;\n\nif (config.runsInWidget) Script.setWidget(w);\nelse if (rejected && data) { const al = new Alert(); al.title = \"Not ledger data\"; al.message = \"The widget kept your last numbers. In the ledger, tap Update widget again.\"; al.addAction(\"OK\"); await al.presentAlert(); await w.presentMedium(); }\nelse await w.presentMedium();\nScript.complete();\n";
-const WIDGET_PREFIX = 'BOSCO-LEDGER-WIDGET:';
-function widgetSummary(){
-  const t0 = today0(), mon = mondayOf(t0), from = ymd(mon), to = ymd(addDays(mon,7)), month = ymd(t0).slice(0,7);
-  const days = [0,0,0,0,0,0,0]; let spent = 0;
-  for (const r of rows){ if (r.dt < from || r.dt >= to || !SPEND.includes(catOf(r))) continue; days[(dObj(r.dt).getDay()+6)%7] -= r.amt; spent -= r.amt; }
-  const ms = spendIn(rows.filter(r => r.dt.startsWith(month)));
-  const limits = Object.entries(state.limits).filter(([,v]) => v > 0).map(([c,v]) => ({n:LABEL[c], used:Math.max(0, ms[c]||0), max:v}));
-  const cats = Object.entries(ms).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]).slice(0,3).map(([c,v]) => [LABEL[c], v]);
-  const last = rows[rows.length-1];
-  return {v:1, wkStart:from, weekly:state.weekly, spentWk:spent, days:days.map(d => Math.max(0,d)), month, limits, cats, bal: last ? last.bal : null, url: MY_OPEN_URL};
-}
-const widgetSig = d => JSON.stringify([d.wkStart, d.weekly, d.spentWk, d.days, d.month, d.limits, d.bal]);
-// copy inside the tap; if the clipboard is refused, show the text ready to select instead
-function copyText(text, title){
-  const ok = () => true;
-  try { return navigator.clipboard.writeText(text).then(ok, () => { manualCopy(text, title); return false; }); }
-  catch(e){ manualCopy(text, title); return Promise.resolve(false); }
-}
-function manualCopy(text, title){
-  $('#sheetHost').innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mcTitle">
-    <span class="grabber" aria-hidden="true"></span><h3 id="mcTitle" style="font-size:18px">${esc(title)}</h3>
-    <p class="small muted">Copying didn't work here. Tap in the box, choose Select All, then Copy.</p>
-    <textarea id="mcText" rows="8" readonly></textarea>
-    <div class="btns"><button class="btn ghost" id="mcClose">Done</button></div></div></div>`;
-  const ta = $('#mcText'); ta.value = text; ta.focus(); ta.select();
-  $('#mcClose').onclick = () => { $('#sheetHost').innerHTML = ''; };
-  $('#scrim').onclick = e => { if (e.target.id === 'scrim') $('#sheetHost').innerHTML = ''; };
-}
-function openScriptable(url){ location.href = url; }
-function sendWidget(){
-  if (!rows.length){ toast('Add some transactions first'); return; }
-  const d = {...widgetSummary(), at: new Date().toISOString()}, json = JSON.stringify(d);
-  const copying = copyText(WIDGET_PREFIX + json, 'Widget data');
-  state.widgetAt = d.at; state.widgetSig = widgetSig(d); save(); renderWidgetState(); renderSettings();
-  if (standalone){
-    openScriptable('scriptable:///run/Ledger%20Widget?d=' + encodeURIComponent(json));
-  } else {
-    copying.then(ok => { if (ok) toast('Copied. Open Scriptable and tap Ledger Widget to update it.'); });
-  }
-}
-function renderWidgetState(){
-  const on = !!state.widgetAt;
-  $('#widgetHdrBtn').hidden = !on;
-  const stale = on && rows.length && widgetSig(widgetSummary()) !== state.widgetSig;
-  $('#widgetDot').hidden = !stale;
-  $('#widgetHdrBtn').setAttribute('aria-label', stale ? 'Update widget: it is behind the ledger' : 'Update widget');
-  const info = $('#widgetInfo'); if (!info) return;
-  info.innerHTML = !on ? 'Not set up yet.'
-    : `Last updated ${dayLabel(state.widgetAt.slice(0,10))} ${new Date(state.widgetAt).toTimeString().slice(0,5)}.${stale ? ' <b style="color:var(--warn)">The ledger has changed since; tap Update widget.</b>' : ''}`
-      + (standalone ? '' : ` In Claude the data goes by clipboard: after tapping Update widget, open Scriptable and tap Ledger Widget.`);
-}
-$('#widgetBtn').onclick = sendWidget;
-$('#widgetHdrBtn').onclick = sendWidget;
-$('#copyScriptBtn').onclick = () => { copyText(WIDGET_SCRIPT, 'Widget script').then(ok => { if (ok) toast('Script copied. In Scriptable tap +, paste, and name it Ledger Widget.'); }); };
 
 // ---------- NAV ----------
 const TABS = ['home','activity','trends','add','settings'];
