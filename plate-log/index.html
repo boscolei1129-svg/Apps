@@ -69,8 +69,8 @@ h1,h2,h3{margin:0;text-wrap:balance}
 
 /* hero */
 .hero{background:var(--surface);border-radius:20px;padding:18px 18px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;border:26px solid var(--plate);opacity:.14}
-.datebar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;border:26px solid var(--plate);opacity:.14;pointer-events:none}
+.datebar{display:flex;align-items:center;gap:6px;margin-bottom:6px;position:relative;z-index:2}
 .datebar .d{flex:1;min-width:0;font-weight:600;color:var(--muted);font-size:13px}
 .iconbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
 .iconbtn:hover{background:var(--surface-2)}
