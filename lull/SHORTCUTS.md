@@ -13,6 +13,8 @@ Lull remains a static, offline sleep diary. Shortcuts captures the times at whic
 
 Neither mode opens a webpage at bedtime. Neither can make a suspended web app update its display while the phone is locked. The relay records events independently, then Lull catches up when open. **The relay is optional source code, not an already deployed service.** GitHub Pages cannot receive POSTs or hide server credentials.
 
+If you already connected Lull to your relay, start with [Add HTTP capture to both shortcuts](#add-http-capture-to-both-shortcuts), then [attach the automations](#3-attach-bedtime-and-wake-automations). You can skip the Files steps unless you want a backup for failed requests.
+
 ## 1. Preserve your diary
 
 1. Open the copy of Lull that contains your data (your Home Screen app or Safari).
@@ -34,22 +36,22 @@ In **Files → iCloud Drive → Shortcuts**, create a folder named **Lull**. If 
 Create a new shortcut and add these actions in order:
 
 1. **Date**: select **Current Date**. This captures when the automation actually executes.
-2. **Format Date**: input the Date from step 1; expand options and set **Date Format → ISO 8601**. The result must include seconds and a timezone, for example `2026-11-20T23:00:00+08:00`. Do not use a localized date or an offset-free date.
-3. **Generate UUID**: generate a fresh ID for this event.
-4. **Text**: enter the one-line JSON below. Replace the two bracketed items by inserting the **magic variables** from steps 3 and 2. Do not type the bracket labels literally. Keep the double quotes around both variables and keep `version` as the number `1`.
+2. **Format Date**: select the **Date** variable from step 1. Set **Date Format → ISO 8601** and turn on **Include Time** if shown. The result needs seconds and a timezone, for example `2026-11-20T23:00:00+08:00`. This is the timestamp.
+3. Add a second **Format Date**. Select the **Date** variable from step 1 again. Set **Date Format → Custom** and enter `yyyyMMddHHmmssSSS`. This is the ID stamp. The timestamp and ID stamp both use built-in actions.
+4. **Text**. Enter the JSON below. Replace the bracketed labels with the actual magic variables from steps 3 and 2. Keep the quotes around the two text values and keep `version` as the number `1`.
 
    ```json
-   {"version":1,"id":"[UUID magic variable]","event":"bedtime","at":"[Formatted Date magic variable]"}
+   {"version":1,"id":"bedtime-[ID stamp variable]","event":"bedtime","at":"[ISO timestamp variable]"}
    ```
 
-5. **Set Name**: input the **Text** from step 4; name it **[UUID magic variable].json**, inserting the *same* UUID from step 3. This gives each capture its own file; no file is overwritten.
-6. **Save File**: input the named text from step 5. Set destination to your **Lull** folder. Turn **Ask Where to Save** off. Keep **Overwrite If File Exists** off if offered. If your version shows a subpath rather than a folder picker, use `Lull/[UUID].json` relative to the selected Shortcuts folder, inserting the UUID variable. Do not add `Lull/` twice.
+5. **Set Name**. Select the **Text** from step 4 and name it **bedtime-[ID stamp].json**, inserting the ID stamp variable from step 3.
+6. **Save File**. Select the named text from step 5 and set its destination to your **Lull** folder. Turn off **Ask Where to Save** and **Overwrite If File Exists** if offered. If you see a subpath instead of a folder picker, use `Lull/bedtime-[ID stamp].json` relative to the Shortcuts folder, with the ID stamp inserted as a variable.
 
-Run it once while unlocked. Grant the requested access to that folder, then inspect the saved `.json` file in Files: it must contain real UUID and ISO timestamp values. Permissions must be resolved before an overnight run. Do not add Open URL, Show Result, Quick Look or Ask for Input actions to an unattended capture shortcut.
+Run it once while unlocked. Grant access to that folder and check that the saved `.json` file contains a filled-in ID and ISO timestamp. Avoid actions that require tapping or typing during an unattended run.
 
 ### Shortcut B: `Lull — Wake`
 
-Duplicate Shortcut A, rename it, and change **only** the Text action's `event` value from `bedtime` to `wake`. Keep its Date, UUID, filename and Save File actions. Run once unlocked and verify a second event file is saved.
+Duplicate Shortcut A and rename it. Change the Text action's `event` value to `wake` and change the ID and file name prefixes from `bedtime-` to `wake-`. Run once unlocked and verify a second event file is saved.
 
 ## 3. Attach bedtime and wake automations
 
@@ -111,21 +113,22 @@ Do not place tokens in repository files, GitHub Pages HTML/JS/config, URL query 
 
 ### Add HTTP capture to both shortcuts
 
-Keep each shortcut's **Save File action before the network request**. A network error then leaves an importable copy on the phone.
+Create **Lull Bedtime** using the **Date** and the two **Format Date** actions in [Shortcut A](#shortcut-a-lull--bedtime). You can add the network actions immediately after those three actions. If you also want a file backup, keep **Save File** before the network request so you can import the saved event if the request fails.
 
-1. After Save File, add **URL**: `https://YOUR-RELAY.workers.dev/events`. Use your actual deployment URL. Never add credentials to it.
+1. Add **URL** with your actual relay address ending in `/events`. Keep credentials in the header below.
 2. Add **Get Contents of URL**. Expand options; set **Method → POST**.
 3. Add headers: `Authorization` = `Bearer YOUR_WRITE_TOKEN` and `Content-Type` = `application/json`. Substitute the real write token privately in your own Shortcut. Do not share that Shortcut publicly.
-4. Set **Request Body → JSON** with these fields. Insert the *original* UUID and formatted Date magic variables from this run; do not generate another ID or timestamp for the HTTP request:
+4. Set **Request Body → JSON** with these fields. Select the outputs of the two **Format Date** actions as magic variables.
 
    | Key | Type | Value |
    | --- | --- | --- |
    | `version` | Number | `1` |
-   | `id` | Text | UUID from the Generate UUID action |
+   | `id` | Text | Type `bedtime-` or `wake-` and then insert the ID stamp from the second Format Date action |
    | `event` | Text | `bedtime` in A, `wake` in B |
-   | `at` | Text | Formatted Date from the Format Date action |
+   | `at` | Text | ISO timestamp from the first Format Date action |
 
-5. Run once unlocked to grant network permission. A successful response is JSON with `ok: true`; retries of an identical ID return `duplicate: true`. Check the dictionary's `ok` value if you add failure notifications; an HTTP response alone is not proof of successful capture. There is no built-in offline retry queue. If the action fails, import the saved file later.
+5. Duplicate **Lull Bedtime** as **Lull Wake**. Change the POST `event` to `wake` and change the `id` prefix to `wake-`. If you enabled file backups, update the saved JSON and file name as well.
+6. Run each shortcut once while unlocked to grant network permission. A successful response contains `ok: true`. If you test the pairing, wait at least five minutes between the two runs. Failed requests do not retry automatically. If you enabled file backups, you can import the saved files later.
 
 To retry an event over HTTP, send the **saved JSON file unchanged**, using Get Contents of URL → POST → Request Body **File**, that file as input, and the same headers. Do not rerun the capture shortcut to retry an old event, since that records a new time and ID. The relay accepts captures up to seven days old; older files can still be imported directly into Lull.
 
