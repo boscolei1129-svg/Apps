@@ -130,6 +130,19 @@ Create **Lull Bedtime** using the **Date** and the two **Format Date** actions i
 5. Duplicate **Lull Bedtime** as **Lull Wake**. Change the POST `event` to `wake` and change the `id` prefix to `wake-`. If you enabled file backups, update the saved JSON and file name as well.
 6. Run each shortcut once while unlocked to grant network permission. A successful response contains `ok: true`. If you test the pairing, wait at least five minutes between the two runs. Failed requests do not retry automatically. If you enabled file backups, you can import the saved files later.
 
+#### If the JSON fields do not offer Select Variable
+
+1. Add a **Text** action after both Format Date actions and before **Get Contents of URL**. Paste this template:
+
+   ```json
+   {"version":1,"event":"bedtime","at":"TIMESTAMP","id":"bedtime-IDSTAMP"}
+   ```
+
+2. In Text, replace `TIMESTAMP` with the variable from the first **Format Date** action. Replace `IDSTAMP` with the variable from the second **Format Date** action. Keep the quotes and the `bedtime-` prefix. Use the variable picker in the Text action to insert the two blue variables.
+3. Add **Set Name** after Text. Use the Text as the input and name it `event.json`. This prepares the request body in memory.
+4. In **Get Contents of URL**, switch **Request Body** to **File** and select the **Renamed Item** output of **Set Name**. Keep the **Authorization** header and add `Content-Type` with the value `application/json`.
+5. In the wake shortcut, change `"event":"bedtime"` to `"event":"wake"` and use the `wake-` prefix before the same ID stamp variable.
+
 To retry an event over HTTP, send the **saved JSON file unchanged**, using Get Contents of URL → POST → Request Body **File**, that file as input, and the same headers. Do not rerun the capture shortcut to retry an old event, since that records a new time and ID. The relay accepts captures up to seven days old; older files can still be imported directly into Lull.
 
 ### Connect Lull
