@@ -1,4 +1,5 @@
 // Lull data layer: state, persistence and sleep maths.
+import { mergeEvents, restPeriods } from './rest.js';
 const KEY = 'lull:v1';
 export const MIN = 60000;
 
@@ -39,11 +40,17 @@ function defaults() {
     },
     active: null, // { type: 'sleep' | 'nap', start: ms }
     entries: [], // { id, type, start, end, quality, mood, tags, dream, sample? }
+    restEvents: [], // Shortcuts trigger ledger, separate from sleep statistics
+    restDismissed: [], // Keep dismissals through repeated imports/syncs
   };
 }
 
+const validTime = value => Number.isFinite(value) && Math.abs(value) <= 8640000000000000;
+const validClock = value => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+const validRating = value => Number.isInteger(value) && value >= 1 && value <= 5;
+
 function validEntry(e) {
-  return e && typeof e === 'object' && typeof e.start === 'number' && typeof e.end === 'number' && e.end > e.start;
+  return e && typeof e === 'object' && validTime(e.start) && validTime(e.end) && e.end > e.start;
 }
 
 function normalise(raw) {
@@ -51,20 +58,36 @@ function normalise(raw) {
   if (!raw || typeof raw !== 'object') return d;
   const settings = { ...d.settings, ...(raw.settings || {}) };
   settings.sound = { ...d.settings.sound, ...((raw.settings || {}).sound || {}) };
-  if (!Array.isArray(settings.tags)) settings.tags = d.settings.tags;
+  if (typeof settings.name !== 'string') settings.name = d.settings.name;
+  for (const key of ['goalMin', 'fallAsleepMin']) {
+    if (!Number.isFinite(settings[key])) settings[key] = d.settings[key];
+  }
+  for (const key of ['bedtime', 'wake']) {
+    if (!validClock(settings[key])) settings[key] = d.settings[key];
+  }
+  for (const key of ['timer', 'volume']) {
+    if (!Number.isFinite(settings.sound[key])) settings.sound[key] = d.settings.sound[key];
+  }
+  settings.tags = Array.isArray(settings.tags)
+    ? settings.tags.filter(tag => tag && typeof tag.id === 'string' && typeof tag.label === 'string')
+    : d.settings.tags;
   const entries = (Array.isArray(raw.entries) ? raw.entries : []).filter(validEntry).map(e => ({
-    id: e.id || uid(),
+    id: typeof e.id === 'string' && e.id ? e.id : uid(),
     type: e.type === 'nap' ? 'nap' : 'sleep',
     start: e.start,
     end: e.end,
-    quality: e.quality ?? null,
-    mood: e.mood ?? null,
-    tags: Array.isArray(e.tags) ? e.tags : [],
+    quality: validRating(e.quality) ? e.quality : null,
+    mood: validRating(e.mood) ? e.mood : null,
+    tags: Array.isArray(e.tags) ? e.tags.filter(tag => typeof tag === 'string') : [],
     dream: typeof e.dream === 'string' ? e.dream : '',
     ...(e.sample ? { sample: true } : {}),
   }));
-  const active = raw.active && typeof raw.active.start === 'number' ? raw.active : null;
-  return { ...d, ...raw, settings, entries, active };
+  const active = raw.active && validTime(raw.active.start) && ['sleep', 'nap'].includes(raw.active.type)
+    ? { start: raw.active.start, type: raw.active.type } : null;
+  let restEvents = [];
+  try { restEvents = mergeEvents([], raw.restEvents || []); } catch { /* Keep the existing diary readable if a trigger ledger is damaged. */ }
+  const restDismissed = Array.isArray(raw.restDismissed) ? raw.restDismissed.filter(x => typeof x === 'string' && x.length <= 161) : [];
+  return { ...d, ...raw, settings, entries, active, restEvents, restDismissed };
 }
 
 function load() {
@@ -79,6 +102,27 @@ function sortEntries() { state.entries.sort((a, b) => b.end - a.end); }
 
 export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { console.warn('Lull could not save', err); }
+}
+// Commit Shortcuts data only after persistence succeeds; a full disk must not look like a successful import.
+export function importRestEvents(events) {
+  const restEvents = mergeEvents(state.restEvents, events);
+  const added = restEvents.length - state.restEvents.length;
+  const next = { ...state, restEvents };
+  localStorage.setItem(KEY, JSON.stringify(next));
+  state = next;
+  listeners.forEach(l => l(state));
+  return added;
+}
+export function getRest() {
+  const result = restPeriods(state.restEvents);
+  return { ...result, periods: result.periods.filter(p => !state.restDismissed.includes(p.id)) };
+}
+export function dismissRest(id) { update(s => { s.restDismissed.push(id); }); }
+export function restoreRest(id) { update(s => { s.restDismissed = s.restDismissed.filter(x => x !== id); }); }
+export function exportRestCSV() {
+  const rows = [['source', 'label', 'start_iso', 'end_iso', 'rest_minutes']];
+  for (const p of getRest().periods) rows.push([p.source, 'Estimated rest period; not detected sleep', new Date(p.start).toISOString(), new Date(p.end).toISOString(), durMin(p)]);
+  return rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 export const get = () => state;
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -292,15 +336,22 @@ export function exportJSON() {
 }
 export function importJSON(text) {
   const raw = JSON.parse(text);
+  if (!raw || raw.app !== 'lull' || raw.version !== 1 || !Array.isArray(raw.entries)) throw new Error('Not a Lull backup');
+  mergeEvents([], raw.restEvents || []); // Reject a damaged backup before changing anything.
   const incoming = normalise(raw);
+  const restEvents = mergeEvents(state.restEvents, incoming.restEvents);
+  const restAdded = restEvents.length - state.restEvents.length;
   let added = 0;
-  update(s => {
-    const ids = new Set(s.entries.map(e => e.id));
-    for (const e of incoming.entries) if (!ids.has(e.id)) { s.entries.push(e); added++; }
-    s.settings = { ...s.settings, ...incoming.settings };
-    s.onboarded = true;
-  });
-  return added;
+  const entries = [...state.entries];
+  const ids = new Set(entries.map(e => e.id));
+  for (const e of incoming.entries) if (!ids.has(e.id)) { entries.push(e); ids.add(e.id); added++; }
+  const next = { ...state, entries: entries.sort((a, b) => b.end - a.end),
+    settings: { ...state.settings, ...incoming.settings }, restEvents,
+    restDismissed: [...new Set([...state.restDismissed, ...incoming.restDismissed])], onboarded: true };
+  localStorage.setItem(KEY, JSON.stringify(next));
+  state = next;
+  listeners.forEach(l => l(state));
+  return added + restAdded;
 }
 export function exportCSV() {
   const tagName = id => state.settings.tags.find(t => t.id === id)?.label || id;

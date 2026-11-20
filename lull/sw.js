@@ -1,6 +1,6 @@
 // Lull service worker: makes the app open instantly and work offline.
 // Bump VERSION when you change files to force a clean refresh.
-const VERSION = 'lull-v1';
+const VERSION = 'lull-v2-shortcuts-pages';
 const FONT_CACHE = 'lull-fonts';
 const ASSETS = [
   './',
@@ -9,6 +9,8 @@ const ASSETS = [
   './css/app.css',
   './js/app.js',
   './js/store.js',
+  './js/rest.js',
+  './js/shortcuts.js',
   './js/ui.js',
   './js/charts.js',
   './js/sounds.js',
@@ -18,6 +20,9 @@ const ASSETS = [
   './icons/apple-touch-icon.png',
   './icons/favicon-64.png',
 ];
+const scope = new URL(self.registration.scope);
+const shell = new URL('index.html', scope);
+const staticPaths = new Set(ASSETS.map(path => new URL(path, scope).pathname));
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -34,7 +39,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const req = event.request;
-  if (req.method !== 'GET') return;
+  if (req.method !== 'GET' || req.headers.has('Authorization')) return;
   const url = new URL(req.url);
 
   // Google Fonts: cache forever once fetched.
@@ -51,13 +56,15 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.origin !== location.origin) return;
+  if (url.origin !== scope.origin || !staticPaths.has(url.pathname)) return;
+  const isShell = url.pathname === scope.pathname || url.pathname === shell.pathname;
+  if (req.mode === 'navigate' && !isShell) return;
 
   // App files: answer from cache straight away, refresh the cache in the background.
   // Changes you push to GitHub show up on the next launch.
   event.respondWith(
     caches.open(VERSION).then(async cache => {
-      const key = req.mode === 'navigate' ? './index.html' : req;
+      const key = isShell ? shell.href : req;
       const cached = await cache.match(key, { ignoreSearch: true });
       const network = fetch(req).then(res => {
         if (res.ok) cache.put(key, res.clone());

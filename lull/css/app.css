@@ -1,6 +1,14 @@
 /* ==========================================================================
    Lull: night-sky sleep journal
    ========================================================================== */
+.rest-summary { margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid #8470ee66; border-radius: 1rem; }
+.rest-record { margin: .8rem 0; padding: 1rem; border: 1px solid #8470ee66; border-radius: 1rem; }
+.rest-record p { margin: .4rem 0; }
+.shortcuts details { margin: 1rem 0; }
+.shortcuts summary { cursor: pointer; padding: .7rem 0; }
+.shortcuts a { color: #c9b7ff; }
+.shortcuts input[type="url"], .shortcuts input[type="password"] { width: 100%; min-width: 0; }
+.shortcuts { overflow-wrap: anywhere; }
 :root {
   /* palette */
   --abyss: #080B26;

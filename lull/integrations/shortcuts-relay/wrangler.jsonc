@@ -1,0 +1,12 @@
+{
+  "name": "lull-rest-relay",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-20",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": { "ALLOWED_ORIGIN": "https://boscolei1129-svg.github.io" },
+  "durable_objects": {
+    "bindings": [{ "name": "REST_LOG", "class_name": "RestLog" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RestLog"] }]
+}

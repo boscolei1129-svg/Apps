@@ -3,6 +3,7 @@ import * as ui from './ui.js';
 import * as charts from './charts.js';
 import * as sounds from './sounds.js';
 import { initSky } from './sky.js';
+import { initShortcuts, openShortcuts, forgetRelay } from './shortcuts.js';
 
 const { $, $$, el, esc, icons, fmtDur, durHTML, fmtTime, fmtClockMin, fmtDay, miniMoon, moonSVG } = ui;
 const TABS = ['tonight', 'journal', 'trends', 'winddown'];
@@ -42,6 +43,7 @@ function boot() {
   switchTab(view.tab, { instant: true });
   if (!store.get().onboarded) showOnboarding();
   document.addEventListener('click', onClick);
+  initShortcuts();
   setInterval(tick, 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderAll(); });
   let rt = 0;
@@ -194,7 +196,7 @@ function renderTonight() {
           ? `<span class="goal-note is-met">${icons.check}${fmtDur(diff)} over your goal</span>`
           : `<span class="goal-note">${fmtDur(-diff)} short of your ${fmtDur(goal)} goal</span>`;
       hero = `<section class="hero">
-        <button class="hero-moon" type="button" data-action="edit:${latest.id}" aria-label="Open last night">${moonSVG(view.heroMode === mode ? phase : view.heroPhase)}</button>
+        <button class="hero-moon" type="button" data-action="edit:${esc(latest.id)}" aria-label="Open last night">${moonSVG(view.heroMode === mode ? phase : view.heroPhase)}</button>
         <div class="hero-num" data-hero-num>${durHTML(view.heroMode === mode ? heroMin : view.heroMin)}</div>
         <p class="hero-sub">${when}, ${fmtTime(nightStart)} to ${fmtTime(latest.end)}</p>
         ${note}
@@ -218,7 +220,7 @@ function renderTonight() {
     </div>`;
 
     if (latest && latest.quality == null && Date.now() - latest.end < 20 * 3600000) {
-      extra += `<button class="checkin-card" type="button" data-action="checkin:${latest.id}">
+      extra += `<button class="checkin-card" type="button" data-action="checkin:${esc(latest.id)}">
         <span class="checkin-moons">${miniMoon(0.32, 22)}${miniMoon(0.8, 22)}${miniMoon(1, 22)}</span>
         <span class="checkin-text"><strong>How did you sleep?</strong><span>Rate the night and note any dreams</span></span>${icons.chevron}</button>`;
     }
@@ -239,7 +241,7 @@ function renderTonight() {
         const main = d.day?.main;
         const f = d.day && d.day.sleepMin ? Math.min(1, d.day.sleepMin / goal) : null;
         const action = main ? `edit:${main.id}` : `add-night-for:${d.key}`;
-        return `<button class="week-day ${i === 6 ? 'is-today' : ''}" type="button" data-action="${action}" style="--i:${i}" aria-label="${fmtDay(d.date)}${d.day ? ', ' + fmtDur(d.day.totalMin) : ', nothing logged'}">
+        return `<button class="week-day ${i === 6 ? 'is-today' : ''}" type="button" data-action="${esc(action)}" style="--i:${i}" aria-label="${fmtDay(d.date)}${d.day ? ', ' + fmtDur(d.day.totalMin) : ', nothing logged'}">
           <span class="wd">${shortWeekday.format(d.date)}</span>${miniMoon(f, 30)}<span class="wh">${d.day ? ui.fmtHours(d.day.totalMin) : '·'}</span></button>`;
       }).join('')}</div>
     </section>`;
@@ -314,7 +316,7 @@ function renderJournal() {
       const m = monthFmt.format(new Date(e.end));
       if (m !== month) { body += `<h2 class="month">${m}</h2>`; month = m; }
       const tags = e.tags.slice(0, 4).map(t => `<span class="tag">${esc(tagLabel(t))}</span>`).join('') + (e.tags.length > 4 ? `<span class="tag">+${e.tags.length - 4}</span>` : '');
-      body += `<button class="entry is-${e.type}" type="button" data-action="edit:${e.id}" style="--i:${Math.min(i++, 12)}">
+      body += `<button class="entry is-${e.type}" type="button" data-action="edit:${esc(e.id)}" style="--i:${Math.min(i++, 12)}">
         <span class="entry-top"><span class="entry-day">${e.type === 'nap' ? `${icons.nap}Nap, ${fmtDay(e.end)}` : fmtDay(e.end)}</span><span class="entry-dur">${durHTML(store.durMin(e))}</span></span>
         ${nightBand(e)}
         <span class="entry-meta"><span>${fmtTime(e.start)} to ${fmtTime(e.end)}</span>${e.quality ? `<span class="q">${ui.ratingMoons(e.quality, 14)}${store.QUALITY[e.quality - 1]}</span>` : ''}${e.mood ? `<span>${ui.faceSVG(e.mood)}${store.MOOD[e.mood - 1]}</span>` : ''}</span>
@@ -326,6 +328,9 @@ function renderJournal() {
   root.innerHTML = `<header class="view-head"><div><h1 class="view-title">Journal</h1></div>
       <div class="head-actions"><button class="icon-btn icon-btn-moon" type="button" data-action="add-menu" aria-label="Add a night or nap">${icons.plus}</button>${settingsBtn}</div></header>
     <div class="seg" role="tablist" aria-label="Filter">${filters.map(([k, l]) => `<button class="seg-btn" type="button" role="tab" aria-selected="${view.journalFilter === k}" data-action="journal-filter:${k}">${l}</button>`).join('')}</div>
+    <section class="rest-summary"><h2 class="section-title">Estimated rest periods</h2>
+      <p class="fine">${store.getRest().periods.length} Shortcuts rest estimates. Scheduled bedtime to wake trigger, not detected sleep. Excluded from sleep trends and debt.</p>
+      <button class="btn btn-ghost btn-sm" type="button" data-action="open-shortcuts">Shortcuts &amp; rest estimates</button></section>
     <div class="entries">${body}</div>`;
 }
 
@@ -701,7 +706,8 @@ function openSettings() {
       <form class="add-tag" data-addtag><input type="text" placeholder="Add a tag, like Late workout" maxlength="24" aria-label="New tag"><button class="btn btn-ghost btn-sm" type="submit">Add</button></form>
     </div>
     <div class="field"><span>Your data</span>
-      <p class="fine">Everything stays on this phone, nothing is uploaded. Export a backup now and then, and before clearing Safari data.</p>
+      <button class="btn btn-ghost btn-sm" type="button" data-action="open-shortcuts">Shortcuts &amp; rest estimates</button>
+      <p class="fine">Your diary stays in this browser. An optional Shortcuts relay stores trigger times separately. Export a backup now and then, and before clearing Safari data.</p>
       <div class="data-actions">
         <button class="btn btn-ghost btn-sm" type="button" data-export>${icons.download}<span>Export backup</span></button>
         <button class="btn btn-ghost btn-sm" type="button" data-import>${icons.upload}<span>Import backup</span></button>
@@ -711,7 +717,7 @@ function openSettings() {
         <input type="file" accept="application/json,.json" hidden data-file>
       </div>
     </div>
-    <p class="fine about">Lull 1.0. Your sleep, kept quietly on your phone.</p>
+    <p class="fine about">Lull 1.1. Your sleep, kept quietly on your phone.</p>
   </div>`);
   const sheet = ui.openSheet({ title: 'Settings', body, className: 'sheet-settings' });
 
@@ -749,8 +755,8 @@ function openSettings() {
     if (e.target.closest('[data-sample]')) { store.addSampleNights(); sheet.close(); ui.toast('Sample nights added. Remove them any time in Settings.'); }
     if (e.target.closest('[data-unsample]')) { store.removeSamples(); sheet.close(); ui.toast('Sample nights removed'); }
     if (e.target.closest('[data-erase]')) {
-      const ok = await ui.confirmSheet({ title: 'Erase all nights?', message: 'This removes every night, nap and dream from this phone. Your settings stay. Export a backup first if you might want them back.', confirm: 'Erase everything', danger: true });
-      if (ok) { store.eraseAll(); sheet.close(); ui.toast('All nights erased'); }
+      const ok = await ui.confirmSheet({ title: 'Erase all nights?', message: 'This removes every night, nap, dream and rest estimate from this browser. Your settings stay. Shortcut files and an optional relay keep their own copies. Export a backup first if you might want them back.', confirm: 'Erase everything', danger: true });
+      if (ok) { forgetRelay(); store.eraseAll(); sheet.close(); ui.toast('All nights erased; relay disconnected'); }
     }
   });
   $('[data-file]', body).addEventListener('change', async e => {
@@ -759,9 +765,9 @@ function openSettings() {
     try {
       const added = store.importJSON(await file.text());
       sheet.close();
-      ui.toast(`Backup imported, ${added} ${added === 1 ? 'entry' : 'entries'} added`);
-    } catch {
-      ui.toast('That file is not a Lull backup. Choose a .json file exported from Lull.');
+      ui.toast(`Backup imported, ${added} ${added === 1 ? 'record' : 'records'} added`);
+    } catch (err) {
+      ui.toast(err.name === 'QuotaExceededError' ? 'Browser storage is full. Nothing was imported. Export a backup and free space, then try again.' : 'That file is not a Lull backup. Choose a .json file exported from Lull.');
     }
   });
 }
@@ -821,6 +827,7 @@ async function onClick(e) {
   switch (action) {
     case 'tab': ui.haptic(5); switchTab(arg); break;
     case 'open-settings': openSettings(); break;
+    case 'open-shortcuts': openShortcuts(); break;
     case 'start-sleep':
     case 'start-nap': {
       if (store.get().active) return;

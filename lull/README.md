@@ -1,6 +1,6 @@
 # Lull
 
-A calm, night-sky sleep journal that lives on your Home Screen. No accounts, no server, no tracking: everything stays on your phone.
+A calm, night-sky sleep journal that lives on your Home Screen. The diary works without accounts or a server. An optional private relay can receive iPhone Shortcuts rest triggers; the manual diary stays in your browser.
 
 ## What it does
 
@@ -13,6 +13,7 @@ A calm, night-sky sleep journal that lives on your Home Screen. No accounts, no 
 - **Bedtime calculator.** Works out bedtimes or wake times that line up with 90 minute sleep cycles, and can set your bedtime goal in one tap.
 - **Sleep sounds.** Rain, ocean, fan, brown, pink and white noise, made on the device so they work offline, with a sleep timer.
 - **Backups.** Export and import a JSON backup, or export a CSV for spreadsheets.
+- **iPhone Shortcuts rest estimates.** Automatically capture scheduled bedtime and wake triggers with Shortcuts, then import event files or fetch from an optional private relay. Rest estimates stay separate from sleep statistics. Follow the [exact setup guide](SHORTCUTS.md); no secret is embedded in GitHub Pages.
 
 ## Where it lives
 
@@ -30,8 +31,8 @@ Open it once while you're online so it can save itself and its fonts for offline
 
 ## Your data
 
-- Nights are stored in your browser's local storage on that one device. Nothing is uploaded anywhere.
-- On iPhone, the Home Screen app keeps its own storage, separate from Safari. Deleting the Home Screen icon deletes its data.
+- Nights are stored in your browser's local storage on that one device. The diary is never uploaded by the app. The optional Shortcuts relay stores trigger times only; event files saved in iCloud Drive sync through your Apple account.
+- On iPhone, the Home Screen app and Safari may use separate storage contexts. Export a backup before deleting either app data or a Home Screen installation.
 - Use **Settings → Export backup** now and then. **Import backup** adds any nights that aren't already there, so it's safe to import onto a phone that already has data.
 
 ## Updating
