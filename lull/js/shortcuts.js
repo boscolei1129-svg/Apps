@@ -1,6 +1,7 @@
 import * as store from './store.js';
 import * as ui from './ui.js';
 import { MAX_BYTES, parseEvents, relayURL } from './rest.js';
+import { isRelayToken, scanReadToken } from './token-scanner.js';
 
 const KEY = 'lull:shortcuts:relay'; // Private runtime preference, never in backups or source.
 let connection = null, syncing = false, lastAttempt = 0, lastSync = '', generation = 0;
@@ -26,7 +27,7 @@ async function boundedText(response) {
 function readConnection() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY));
-    if (raw && /^[A-Za-z0-9_-]{43}$/.test(raw.token)) return { url: relayURL(raw.url), token: raw.token, remember: true };
+    if (raw && isRelayToken(raw.token)) return { url: relayURL(raw.url), token: raw.token, remember: true };
   } catch { /* No valid saved connection. */ }
   return null;
 }
@@ -86,6 +87,12 @@ export function openShortcuts() {
       <p class="fine">Requires your own deployed relay. Shortcuts sends trigger IDs and times to it; Lull fetches them when open. Connect only to your own HTTPS address. The read token grants access to rest times.</p>
       <label class="field"><span>Relay URL</span><input type="url" data-url placeholder="https://your-relay.workers.dev/events" autocomplete="off"></label>
       <label class="field"><span>Relay read token</span><input type="password" data-token autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <div class="data-actions">
+        <button class="btn btn-ghost btn-sm" type="button" data-scan>Scan read token QR</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-stop-scan hidden>Stop camera</button>
+      </div>
+      <video class="token-camera" data-camera autoplay playsinline muted hidden aria-label="QR scanner camera preview"></video>
+      <p class="fine" data-scan-status role="status" hidden></p>
       <label class="switch-row"><span>Remember on this browser</span><input type="checkbox" data-remember role="switch"><i aria-hidden="true"></i></label>
       <p class="fine">By default the token stays in memory until reload. Remembering stores it on this browser for automatic sync on launch; scripts on this github.io origin can read it. It is excluded from Lull backups and CSV. Never enter a write token, GitHub token or admin key here.</p>
       <div class="data-actions"><button class="btn btn-primary btn-sm" type="button" data-connect>Connect &amp; sync</button><button class="btn btn-ghost btn-sm" type="button" data-sync>Sync now</button><button class="btn btn-ghost btn-sm" type="button" data-disconnect>Disconnect &amp; forget token</button></div>
@@ -114,9 +121,37 @@ export function openShortcuts() {
       ${periods.length > 60 ? '<p class="fine">Showing the latest 60; export rest CSV for all periods.</p>' : ''}
       ${issues.length ? `<h3>Unpaired triggers (${issues.length})</h3><ul class="fine">${issues.slice(0, 20).map(x => `<li>${esc(new Date(x.event.at).toLocaleString())}: ${esc(x.reason)}</li>`).join('')}</ul><p class="fine">No sleep is invented for missing or ambiguous triggers. All raw records remain in your JSON backup.</p>` : ''}`;
   };
+  const relaySettings = $('details', body);
+  const scanButton = $('[data-scan]', body);
+  const stopScanButton = $('[data-stop-scan]', body);
+  const scanStatus = $('[data-scan-status]', body);
+  let stopScanner = null;
+  function showScanStatus(message, running) {
+    scanStatus.textContent = message;
+    scanStatus.hidden = !message;
+    scanButton.disabled = running;
+    stopScanButton.hidden = !running;
+  }
+  function stopScanning() {
+    stopScanner?.();
+    stopScanner = null;
+    showScanStatus('', false);
+  }
+  scanButton.onclick = () => {
+    stopScanning();
+    stopScanner = scanReadToken($('[data-camera]', body), token => { $('[data-token]', body).value = token; }, showScanStatus);
+  };
+  stopScanButton.onclick = stopScanning;
+  relaySettings.addEventListener('toggle', () => { if (!relaySettings.open) stopScanning(); });
+
   const unsubscribe = store.subscribe(render);
   watchers.add(render);
-  ui.openSheet({ title: 'Shortcuts & rest estimates', body, className: 'sheet-settings', onClose: () => { unsubscribe(); watchers.delete(render); $('[data-token]', body).value = ''; } });
+  ui.openSheet({ title: 'Shortcuts & rest estimates', body, className: 'sheet-settings', onClose: () => {
+    stopScanning();
+    unsubscribe();
+    watchers.delete(render);
+    $('[data-token]', body).value = '';
+  } });
   render();
   $('[data-choose]', body).onclick = () => $('[data-file]', body).click();
   $('[data-file]', body).onchange = async e => {
@@ -134,7 +169,8 @@ export function openShortcuts() {
     try {
       const url = relayURL($('[data-url]', body).value.trim());
       const token = $('[data-token]', body).value.trim();
-      if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new Error('Enter the 43-character read token generated during relay setup.');
+      if (!isRelayToken(token)) throw new Error('Scan your read token QR or paste the full 43-character read token.');
+      stopScanning();
       const remember = $('[data-remember]', body).checked;
       if (remember) localStorage.setItem(KEY, JSON.stringify({ url, token }));
       else localStorage.removeItem(KEY);
@@ -144,6 +180,7 @@ export function openShortcuts() {
   };
   $('[data-sync]', body).onclick = () => void sync();
   $('[data-disconnect]', body).onclick = () => {
+    stopScanning();
     try { forgetRelay(); } catch { ui.toast('Could not forget the saved connection. Check browser storage permissions.'); return; }
     $('[data-token]', body).value = ''; $('[data-remember]', body).checked = false; render();
   };

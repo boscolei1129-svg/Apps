@@ -1,6 +1,6 @@
 // Lull service worker: makes the app open instantly and work offline.
 // Bump VERSION when you change files to force a clean refresh.
-const VERSION = 'lull-v2-shortcuts-pages';
+const VERSION = 'lull-v3-read-token-scanner';
 const FONT_CACHE = 'lull-fonts';
 const ASSETS = [
   './',
@@ -11,6 +11,8 @@ const ASSETS = [
   './js/store.js',
   './js/rest.js',
   './js/shortcuts.js',
+  './js/token-scanner.js',
+  './js/vendor/jsQR.js',
   './js/ui.js',
   './js/charts.js',
   './js/sounds.js',

@@ -9,6 +9,8 @@
 .shortcuts a { color: #c9b7ff; }
 .shortcuts input[type="url"], .shortcuts input[type="password"] { width: 100%; min-width: 0; }
 .shortcuts { overflow-wrap: anywhere; }
+.shortcuts [hidden] { display: none; }
+.token-camera { width: 100%; max-height: 220px; object-fit: contain; border-radius: .75rem; background: #080B26; }
 :root {
   /* palette */
   --abyss: #080B26;

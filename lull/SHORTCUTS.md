@@ -133,6 +133,8 @@ To retry an event over HTTP, send the **saved JSON file unchanged**, using Get C
 
 Open **Settings → Shortcuts & rest estimates → Optional private relay**. Enter your HTTPS `/events` URL and the private **read token**, then tap **Connect & sync**.
 
+If you have a private read token QR on another screen, tap **Scan read token QR** in Lull, allow camera access, and point your camera at it. Lull fills the token field and stops the camera. Scanning happens on your phone.
+
 By default the token stays in memory only and is lost on reload. If you select **Remember on this browser**, it is saved in that browser's local storage for automatic launch sync. Any script running on that GitHub Pages origin can read locally saved credentials, so remember it only on a trusted device. It is not published in GitHub Pages and it is excluded from app backups and CSV. Safari and a Home Screen app may use different storage contexts; connect the one you use for your diary.
 
 ### Limits, rotation and deletion
